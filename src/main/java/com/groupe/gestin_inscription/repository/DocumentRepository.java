@@ -24,4 +24,6 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
      */
     List<Document> findByValidationStatus(ValidationStatus status);
     Optional<Document> findByHash(String hash);
+    
+
 }

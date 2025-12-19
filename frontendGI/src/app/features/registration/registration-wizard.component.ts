@@ -455,7 +455,7 @@ export class RegistrationWizardComponent implements OnInit, OnDestroy {
         gpa: formData.academicHistory.gpa || undefined,
         honors: formData.academicHistory.honors || []
       },
-      targetInstitution: formData.academicHistory.lastInstitution || 'Institution par défaut',
+      targetInstitution: formData.academicHistory.targetInstitution || 'Institution par défaut',
       specialization: formData.academicHistory.specialization || 'Spécialisation par défaut'
     };
   }
@@ -683,7 +683,10 @@ export class RegistrationWizardComponent implements OnInit, OnDestroy {
     
     // Validation parcours académique
     if (!formData.academicHistory.lastInstitution?.trim()) {
-      errors.push('Établissement');
+      errors.push('Établissement précédent');
+    }
+    if (!formData.academicHistory.targetInstitution?.trim()) {
+      errors.push('Établissement cible');
     }
     if (!formData.academicHistory.specialization?.trim()) {
       errors.push('Spécialisation');

@@ -59,6 +59,7 @@ public class AdminApplicationController {
 
     @Operation(summary = "Get application details with documents")
     @GetMapping("/{applicationId}/details")
+    @PreAuthorize("hasAnyRole('AGENT', 'SUPER_ADMIN') or (hasRole('CANDIDATE') and @applicationServiceImpl.isOwner(#applicationId, authentication.name))")
     public ResponseEntity<?> getApplicationDetails(@PathVariable Long applicationId) {
         try {
             Application application = applicationService.getApplicationById(applicationId);
@@ -115,45 +116,58 @@ public class AdminApplicationController {
     private Map<String, Object> convertToDetailedDto(Application application) {
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", application.getId());
-        dto.put("status", application.getStatus().name());
+        dto.put("status", application.getStatus() != null ? application.getStatus().name() : "UNKNOWN");
         dto.put("submissionDate", application.getSubmissionDate());
-        dto.put("lastUpdated", application.getUpdatedAt());
+        dto.put("lastUpdated", application.getLastUpdated());
         dto.put("completionRate", application.getCompletionRate());
+        dto.put("targetInstitution", application.getTargetInstitution());
+        dto.put("specialization", application.getSpecialization());
         
+        // Safe user extraction without circular references
         User applicant = application.getApplicantName();
         if (applicant != null) {
             Map<String, Object> candidateInfo = new HashMap<>();
             candidateInfo.put("id", applicant.getId());
-            candidateInfo.put("name", applicant.getFirstName() + " " + applicant.getLastName());
+            candidateInfo.put("firstName", applicant.getFirstName());
+            candidateInfo.put("lastName", applicant.getLastName());
             candidateInfo.put("email", applicant.getEmail());
             candidateInfo.put("phone", applicant.getPhoneNumber());
             candidateInfo.put("nationality", applicant.getNationality());
+            candidateInfo.put("address", applicant.getAddress());
             dto.put("candidate", candidateInfo);
         }
         
-        // Get documents summary
-        List<Document> documents = documentService.getDocumentsByApplicationId(application.getId());
-        long validatedDocs = documents.stream().filter(d -> d.getValidationStatus().name().equals("VALIDATED")).count();
-        long rejectedDocs = documents.stream().filter(d -> d.getValidationStatus().name().equals("REJECTED")).count();
-        long pendingDocs = documents.stream().filter(d -> d.getValidationStatus().name().equals("PENDING")).count();
-        
-        Map<String, Object> docsSummary = new HashMap<>();
-        docsSummary.put("total", documents.size());
-        docsSummary.put("validated", validatedDocs);
-        docsSummary.put("rejected", rejectedDocs);
-        docsSummary.put("pending", pendingDocs);
-        dto.put("documentsSummary", docsSummary);
+        // Safe documents summary without loading full entities
+        try {
+            List<Document> documents = documentService.getDocumentsByApplicationId(application.getId());
+            Map<String, Object> docsSummary = new HashMap<>();
+            docsSummary.put("total", documents.size());
+            docsSummary.put("validated", documents.stream().filter(d -> "VALIDATED".equals(d.getValidationStatus().name())).count());
+            docsSummary.put("rejected", documents.stream().filter(d -> "REJECTED".equals(d.getValidationStatus().name())).count());
+            docsSummary.put("pending", documents.stream().filter(d -> "PENDING".equals(d.getValidationStatus().name())).count());
+            dto.put("documentsSummary", docsSummary);
+        } catch (Exception e) {
+            // Fallback if documents can't be loaded
+            Map<String, Object> docsSummary = new HashMap<>();
+            docsSummary.put("total", 0);
+            docsSummary.put("validated", 0);
+            docsSummary.put("rejected", 0);
+            docsSummary.put("pending", 0);
+            dto.put("documentsSummary", docsSummary);
+        }
         
         return dto;
     }
     
-    private DocumentResponseDTO convertDocumentToDto(Document document) {
-        DocumentResponseDTO dto = new DocumentResponseDTO();
-        dto.setId(document.getId());
-        dto.setName(document.getName());
-        dto.setFileType(document.getFileType());
-        dto.setValidationStatus(document.getValidationStatus().name());
-        dto.setOcrNotes(document.getOcrNotes());
+    private Map<String, Object> convertDocumentToDto(Document document) {
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("id", document.getId());
+        dto.put("name", document.getName());
+        dto.put("fileType", document.getFileType());
+        dto.put("validationStatus", document.getValidationStatus() != null ? document.getValidationStatus().name() : "PENDING");
+        dto.put("ocrNotes", document.getOcrNotes());
+        dto.put("fileSizeMB", document.getFileSizeMB());
+        // Don't include application reference to avoid circular dependency
         return dto;
     }
 }

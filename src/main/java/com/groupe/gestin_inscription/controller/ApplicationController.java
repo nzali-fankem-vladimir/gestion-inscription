@@ -1,815 +1,905 @@
 package com.groupe.gestin_inscription.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.groupe.gestin_inscription.dto.request.ApplicationSubmissionRequestDTO;
 import com.groupe.gestin_inscription.dto.request.DocumentUploadRequestDTO;
+import com.groupe.gestin_inscription.dto.response.ApplicationStatusResponseDto;
 import com.groupe.gestin_inscription.model.Application;
 import com.groupe.gestin_inscription.model.User;
-import com.groupe.gestin_inscription.model.Document;
+import com.groupe.gestin_inscription.model.AcademicHistory;
+import com.groupe.gestin_inscription.model.Enums.ApplicationStatus;
+import com.groupe.gestin_inscription.model.Enums.Gender;
 import com.groupe.gestin_inscription.repository.UserRepository;
-import com.groupe.gestin_inscription.repository.DocumentRepository;
+import com.groupe.gestin_inscription.repository.AcademicHistoryRepository;
+import com.groupe.gestin_inscription.repository.ApplicationRepository;
 import com.groupe.gestin_inscription.services.serviceImpl.ApplicationServiceImpl;
-import com.groupe.gestin_inscription.services.serviceImpl.NotificationServiceImpl;
-import com.groupe.gestin_inscription.services.serviceImpl.EmailNotificationService;
-import com.groupe.gestin_inscription.model.Enums.NotificationType;
+import com.groupe.gestin_inscription.services.serviceImpl.DocumentServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.List;
-import java.util.ArrayList;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
 
 @RestController
 @RequestMapping("/api/applications")
 @Tag(name = "Application Management", description = "Endpoints for managing the application submission workflow")
 public class ApplicationController {
 
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationController.class);
+
     @Autowired
     private ApplicationServiceImpl applicationServiceImpl;
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private com.groupe.gestin_inscription.repository.ApplicationRepository applicationRepository;
+    private AcademicHistoryRepository academicHistoryRepository;
     @Autowired
-    private DocumentRepository documentRepository;
+    private ApplicationRepository applicationRepository;
     @Autowired
-    private NotificationServiceImpl notificationService;
-    @Autowired
-    private EmailNotificationService emailNotificationService;
-    
-    // Endpoint de test pour vérifier l'authentification
-    @GetMapping("/auth-test")
-    @PreAuthorize("hasAuthority('ROLE_CANDIDATE') or hasAuthority('ROLE_AGENT') or hasAuthority('ROLE_SUPER_ADMIN')")
-    public ResponseEntity<?> testAuth() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("username", authentication.getName());
-        response.put("authorities", authentication.getAuthorities());
-        response.put("authenticated", authentication.isAuthenticated());
-        return ResponseEntity.ok(response);
-    }
+    private DocumentServiceImpl documentService;
 
-    // Endpoint pour récupérer toutes les candidatures (agents et admins)
-    @GetMapping("/all")
-    @PreAuthorize("hasAuthority('ROLE_AGENT') or hasAuthority('ROLE_SUPER_ADMIN')")
-    public ResponseEntity<?> getAllApplications() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String currentUsername = authentication.getName();
-            
-            System.out.println("Debug - Getting all applications for user: " + currentUsername);
-            
-            // Récupérer toutes les candidatures via le service
-            List<Application> applications = applicationServiceImpl.getAllApplications();
-            
-            // Convertir en format attendu par le frontend
-            List<Map<String, Object>> applicationsData = applications.stream()
-                .map(this::convertApplicationToDto)
-                .collect(Collectors.toList());
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("applications", applicationsData);
-            response.put("count", applicationsData.size());
-            response.put("message", "Candidatures récupérées avec succès");
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            System.err.println("Error getting all applications: " + e.getMessage());
-            e.printStackTrace();
-            
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Erreur lors de la récupération des candidatures");
-            error.put("details", e.getMessage());
-            return ResponseEntity.status(500).body(error);
-        }
-    }
-    
-    // Endpoint pour récupérer les candidatures de l'utilisateur connecté
-    @GetMapping("/my-applications")
-    // @PreAuthorize("hasAuthority('ROLE_CANDIDATE') or hasAuthority('ROLE_AGENT') or hasAuthority('ROLE_SUPER_ADMIN')")
-    public ResponseEntity<?> getMyApplications() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String currentUsername = authentication.getName();
-            
-            System.out.println("=== MY-APPLICATIONS DEBUG ===");
-            System.out.println("Authentication: " + authentication);
-            System.out.println("Username: " + currentUsername);
-            System.out.println("Authorities: " + authentication.getAuthorities());
-            System.out.println("Is authenticated: " + authentication.isAuthenticated());
-            System.out.println("Principal: " + authentication.getPrincipal());
-            
-            // Récupérer l'utilisateur (d'abord par email, puis par username)
-            System.out.println("Searching user by email: " + currentUsername);
-            Optional<User> userOpt = userRepository.findByEmail(currentUsername);
-            System.out.println("User found by email: " + userOpt.isPresent());
-            
-            if (!userOpt.isPresent()) {
-                System.out.println("Searching user by username: " + currentUsername);
-                userOpt = userRepository.findByUsername(currentUsername);
-                System.out.println("User found by username: " + userOpt.isPresent());
-            }
-            
-            if (!userOpt.isPresent()) {
-                System.out.println("No user found for: " + currentUsername);
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
-                response.put("applications", new ArrayList<>());
-                response.put("count", 0);
-                response.put("message", "Aucune candidature trouvée (mode test)");
-                response.put("details", "Vous pouvez soumettre une nouvelle candidature.");
-                return ResponseEntity.ok(response);
-            }
-            
-            User user = userOpt.get();
-            
-            // Récupérer les candidatures de cet utilisateur
-            List<Application> applications = applicationRepository.findByApplicantName(user);
-            
-            // Convertir en format attendu par le frontend
-            List<Map<String, Object>> applicationsData = applications.stream()
-                .map(this::convertApplicationToDto)
-                .collect(Collectors.toList());
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("applications", applicationsData);
-            response.put("count", applicationsData.size());
-            response.put("message", applicationsData.isEmpty() ? 
-                "Aucune candidature trouvée" : "Candidatures récupérées avec succès");
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            System.err.println("Error getting user applications: " + e.getMessage());
-            e.printStackTrace();
-            
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Erreur lors de la récupération des candidatures");
-            error.put("details", e.getMessage());
-            return ResponseEntity.status(500).body(error);
-        }
-    }
-    
-
-    
-    // Endpoint pour récupérer les documents d'une candidature
-    @GetMapping("/{id}/documents")
-    @PreAuthorize("hasAuthority('ROLE_AGENT') or hasAuthority('ROLE_SUPER_ADMIN')")
-    public ResponseEntity<?> getApplicationDocuments(@PathVariable Long id) {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String currentUsername = authentication.getName();
-            
-            System.out.println("Debug - Getting documents for application " + id + " by user: " + currentUsername);
-            
-            // Retourner directement le tableau de documents
-            List<Map<String, Object>> documents = new ArrayList<>();
-            
-            return ResponseEntity.ok(documents);
-            
-        } catch (Exception e) {
-            System.err.println("Error getting documents for application " + id + ": " + e.getMessage());
-            e.printStackTrace();
-            
-            return ResponseEntity.status(500).body(new ArrayList<>());
-        }
-    }
-    
-    // Endpoint pour soumettre une candidature
-    @PostMapping("/submit")
-    @PreAuthorize("hasAuthority('ROLE_CANDIDATE') or hasAuthority('ROLE_AGENT') or hasAuthority('ROLE_SUPER_ADMIN')")
-    public ResponseEntity<?> submitApplication(
-            @RequestParam("applicationData") String applicationDataJson,
-            @RequestParam(value = "documents", required = false) MultipartFile[] documents) {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String currentUsername = authentication.getName();
-            
-            System.out.println("=== SUBMIT APPLICATION DEBUG ===");
-            System.out.println("Username: " + currentUsername);
-            System.out.println("Application data: " + applicationDataJson);
-            System.out.println("Documents count: " + (documents != null ? documents.length : 0));
-            
-            // Parser les données JSON
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
-            objectMapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-            ApplicationSubmissionRequestDTO applicationData = objectMapper.readValue(applicationDataJson, ApplicationSubmissionRequestDTO.class);
-            
-            // Récupérer l'utilisateur
-            Optional<User> userOpt = userRepository.findByEmail(currentUsername);
-            if (!userOpt.isPresent()) {
-                userOpt = userRepository.findByUsername(currentUsername);
-            }
-            
-            if (!userOpt.isPresent()) {
-                Map<String, Object> error = new HashMap<>();
-                error.put("success", false);
-                error.put("message", "Utilisateur non trouvé");
-                return ResponseEntity.status(404).body(error);
-            }
-            
-            User user = userOpt.get();
-            
-            // Mettre à jour les informations utilisateur avec les données du formulaire
-            if (applicationData.getPersonalInfo() != null) {
-                ApplicationSubmissionRequestDTO.PersonalInfoDTO personalInfo = applicationData.getPersonalInfo();
-                if (personalInfo.getLastName() != null) {
-                    user.setLastName(personalInfo.getLastName());
-                }
-                if (personalInfo.getFirstNames() != null && personalInfo.getFirstNames().length > 0) {
-                    user.setFirstName(String.join(" ", personalInfo.getFirstNames()));
-                }
-            }
-            
-            // Sauvegarder les informations utilisateur mises à jour
-            userRepository.save(user);
-            
-            System.out.println("Updated user - FirstName: " + user.getFirstName() + ", LastName: " + user.getLastName());
-            
-            // Créer une nouvelle candidature
-            Application application = new Application();
-            application.setApplicantName(user);
-            application.setSubmissionDate(LocalDateTime.now());
-            application.setStatus(com.groupe.gestin_inscription.model.Enums.ApplicationStatus.UNDER_REVIEW);
-            
-            // Sauvegarder la candidature
-            Application savedApplication = applicationRepository.save(application);
-            
-
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("applicationId", savedApplication.getId());
-            response.put("message", "Candidature soumise avec succès");
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            System.err.println("Error submitting application: " + e.getMessage());
-            e.printStackTrace();
-            
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Erreur lors de la soumission de la candidature");
-            error.put("details", e.getMessage());
-            return ResponseEntity.status(500).body(error);
-        }
-    }
-    
-    // Endpoint de test simple sans sécurité
     @GetMapping("/test")
     public ResponseEntity<?> testEndpoint() {
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
         response.put("message", "Test endpoint works");
-        response.put("timestamp", LocalDateTime.now().toString());
+        response.put("timestamp", LocalDateTime.now());
         return ResponseEntity.ok(response);
     }
-    
-    // Test endpoint pour my-applications sans authentification
-    @GetMapping("/test-my-applications")
-    public ResponseEntity<?> testMyApplications() {
+
+    @GetMapping("/all-simple")
+    @PreAuthorize("hasAnyAuthority('ROLE_AGENT', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> getAllApplicationsSimple() {
         try {
-            List<Application> allApplications = applicationRepository.findAll();
+            logger.info("Starting getAllApplicationsSimple");
+            List<Application> applications = applicationRepository.findAll();
+            logger.info("Found {} applications", applications.size());
+            
+            List<Map<String, Object>> applicationList = new ArrayList<>();
+            for (Application app : applications) {
+                try {
+                    Map<String, Object> dto = convertApplicationToDto(app);
+                    applicationList.add(dto);
+                    logger.debug("Successfully converted application {} to DTO", app.getId());
+                } catch (Exception e) {
+                    logger.error("Error converting application {} to DTO: {}", app.getId(), e.getMessage(), e);
+                    // Continue with other applications instead of failing completely
+                }
+            }
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("count", allApplications.size());
-            response.put("message", "Test my-applications works - found " + allApplications.size() + " applications");
+            response.put("applications", applicationList);
+            response.put("count", applicationList.size());
             
+            logger.info("Successfully processed {} applications", applicationList.size());
             return ResponseEntity.ok(response);
+            
         } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            logger.error("Error in getAllApplicationsSimple", e);
+            Map<String, Object> errorResponse = createErrorResponse("INTERNAL_ERROR", "Une erreur interne s'est produite");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
+    @PostMapping("/submit-simple")
+    public ResponseEntity<?> submitSimpleApplication(@RequestBody Map<String, Object> request) {
+        try {
+            String username = (String) request.get("username");
+            if (username == null || username.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(createErrorResponse("MISSING_USERNAME", "Nom d'utilisateur requis"));
+            }
+            
+            Application newApplication = applicationServiceImpl.createFromExistingUser(username, new ArrayList<>());
+            return ResponseEntity.ok(convertToDto(newApplication));
+            
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(createErrorResponse("ALREADY_SUBMITTED", "Candidature déjà soumise"));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(404).body(createErrorResponse("USER_NOT_FOUND", "Utilisateur non trouvé"));
+        } catch (Exception e) {
+            logger.error("Server error during application submission", e);
+            return ResponseEntity.status(500).body(createErrorResponse("SERVER_ERROR", "Erreur du serveur"));
         }
     }
     
-    // Debug version of my-applications with detailed logging
-    @GetMapping("/debug-my-applications")
-    public ResponseEntity<?> debugMyApplications(HttpServletRequest request) {
+    @PostMapping(value = "/submit", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<?> submitApplication(
+            @RequestParam(required = false) String applicationData,
+            @RequestPart(required = false) List<MultipartFile> files) {
         try {
-            System.out.println("=== DEBUG MY-APPLICATIONS ===");
-            
-            // Check authentication
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            System.out.println("Authentication: " + authentication);
-            System.out.println("Is authenticated: " + (authentication != null && authentication.isAuthenticated()));
+            String currentUsername = authentication.getName();
             
-            if (authentication != null) {
-                System.out.println("Principal: " + authentication.getPrincipal());
-                System.out.println("Name: " + authentication.getName());
-                System.out.println("Authorities: " + authentication.getAuthorities());
+            logger.info("Processing application submission for user: {}", currentUsername);
+            
+            // Find or create user
+            User user = findOrCreateUser(currentUsername);
+            
+            // Parse application data from frontend format
+            Map<String, Object> frontendData = null;
+            if (applicationData != null && !applicationData.trim().isEmpty()) {
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.registerModule(new JavaTimeModule());
+                frontendData = mapper.readValue(applicationData, Map.class);
+                logger.info("Parsed frontend application data for user: {}. Data keys: {}", currentUsername, frontendData.keySet());
+                logger.info("Raw applicationData received: {}", applicationData);
+            } else {
+                logger.warn("No application data received for user: {}", currentUsername);
             }
             
-            // Check headers
-            String authHeader = request.getHeader("Authorization");
-            System.out.println("Authorization header: " + (authHeader != null ? "Present (" + authHeader.substring(0, Math.min(20, authHeader.length())) + "...)" : "Missing"));
+            // Update user with form data
+            if (frontendData != null) {
+                logger.info("Before update - User data: firstName={}, lastName={}, email={}", 
+                    user.getFirstName(), user.getLastName(), user.getEmail());
+                updateUserFromFrontendData(user, frontendData);
+                user = userRepository.save(user);
+                logger.info("After update - User data: firstName={}, lastName={}, email={}", 
+                    user.getFirstName(), user.getLastName(), user.getEmail());
+                logger.info("Updated user information for: {}", currentUsername);
+            }
+            
+            // Process documents
+            List<DocumentUploadRequestDTO> documentRequests = new ArrayList<>();
+            if (files != null && !files.isEmpty()) {
+                for (MultipartFile file : files) {
+                    if (!file.isEmpty()) {
+                        DocumentUploadRequestDTO docRequest = new DocumentUploadRequestDTO();
+                        docRequest.setName(file.getOriginalFilename());
+                        docRequest.setFileContent(file);
+                        docRequest.setDocumentType(file.getContentType());
+                        documentRequests.add(docRequest);
+                        logger.info("Added document: {} for processing", file.getOriginalFilename());
+                    }
+                }
+            }
+            
+            // Create application
+            Application application = createApplicationFromFrontendData(user, frontendData, documentRequests);
+            
+            // Save documents
+            if (!documentRequests.isEmpty()) {
+                for (DocumentUploadRequestDTO docRequest : documentRequests) {
+                    try {
+                        documentService.uploadDocument(application.getId(), docRequest);
+                        logger.info("Saved document: {} for application: {}", docRequest.getName(), application.getId());
+                    } catch (Exception e) {
+                        logger.error("Failed to save document: {}", docRequest.getName(), e);
+                    }
+                }
+            }
+            
+            logger.info("Successfully created application with ID: {} for user: {}", application.getId(), currentUsername);
+            return ResponseEntity.ok(convertToDto(application));
+            
+        } catch (IllegalStateException e) {
+            logger.warn("Application already submitted for user");
+            return ResponseEntity.status(409).body(createErrorResponse("ALREADY_SUBMITTED", "Candidature déjà soumise"));
+        } catch (Exception e) {
+            logger.error("Error during application submission", e);
+            return ResponseEntity.status(500).body(createErrorResponse("SERVER_ERROR", "Erreur lors de la soumission"));
+        }
+    }
+
+    @GetMapping("/status/{status}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CANDIDATE', 'ROLE_AGENT', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<?> getApplicationsByStatus(@PathVariable ApplicationStatus status) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUsername = authentication.getName();
+            boolean isAgent = authentication.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_AGENT") || auth.getAuthority().equals("ROLE_SUPER_ADMIN"));
+
+            List<Application> applications = applicationServiceImpl.getApplicationsByStatus(status);
+            
+            if (!isAgent) {
+                // Pour les candidats, filtrer seulement leurs propres candidatures
+                applications = applications.stream()
+                        .filter(app -> app.getApplicantName() != null &&
+                                currentUsername.equals(app.getApplicantName().getUsername()))
+                        .collect(Collectors.toList());
+            }
+
+            // Pour les agents, retourner toutes les données complètes
+            List<Map<String, Object>> responseDtos = applications.stream()
+                    .map(isAgent ? this::convertApplicationToDto : app -> {
+                        Map<String, Object> basicDto = new HashMap<>();
+                        ApplicationStatusResponseDto dto = convertToDto(app);
+                        basicDto.put("applicationId", dto.getApplicationId());
+                        basicDto.put("status", dto.getStatus());
+                        basicDto.put("completionRate", dto.getCompletionRate());
+                        basicDto.put("submissionDate", dto.getSubmissionDate());
+                        basicDto.put("applicantName", dto.getApplicantName());
+                        return basicDto;
+                    })
+                    .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("applications", responseDtos);
+            response.put("status", status.name());
+            response.put("count", responseDtos.size());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error fetching applications by status", e);
+            return ResponseEntity.status(500).body(createErrorResponse("STATUS_FETCH_ERROR", "Erreur lors de la recherche par statut"));
+        }
+    }
+
+    @PutMapping("/review/{applicationId}")
+    @PreAuthorize("hasAuthority('ROLE_AGENT')")
+    public ResponseEntity<?> reviewApplication(@PathVariable Long applicationId, @RequestParam("decision") String reviewDecision) {
+        try {
+            applicationServiceImpl.reviewDossier(applicationId, reviewDecision);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Candidature traitée avec succès");
+            return ResponseEntity.ok(response);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(404).body(createErrorResponse("APPLICATION_NOT_FOUND", "Candidature non trouvée"));
+        } catch (Exception e) {
+            logger.error("Error during application review", e);
+            return ResponseEntity.status(500).body(createErrorResponse("REVIEW_ERROR", "Erreur lors du traitement"));
+        }
+    }
+
+    @GetMapping("/my-applications")
+    public ResponseEntity<?> getMyApplications(@RequestParam(required = false) String email) {
+        try {
+            String currentUsername = getCurrentUsername(email);
+            
+            List<Application> allApplications = applicationServiceImpl.getAllApplications();
+            List<Application> userApplications = allApplications.stream()
+                    .filter(app -> app.getApplicantName() != null &&
+                            (currentUsername.equals(app.getApplicantName().getUsername()) ||
+                             currentUsername.equals(app.getApplicantName().getEmail())))
+                    .collect(Collectors.toList());
+
+            List<Map<String, Object>> responseDtos = userApplications.stream()
+                    .map(app -> {
+                        Map<String, Object> dto = new HashMap<>();
+                        dto.put("applicationId", app.getId());
+                        dto.put("status", app.getStatus().name());
+                        dto.put("completionRate", app.getCompletionRate());
+                        dto.put("submissionDate", app.getSubmissionDate());
+                        dto.put("lastUpdated", app.getLastUpdated());
+                        dto.put("targetInstitution", app.getTargetInstitution());
+                        dto.put("specialization", app.getSpecialization());
+                        
+                        // Ajouter les documents
+                        try {
+                            List<com.groupe.gestin_inscription.model.Document> documents = documentService.getDocumentsByApplicationId(app.getId());
+                            List<Map<String, Object>> docList = documents.stream()
+                                .map(doc -> {
+                                    Map<String, Object> docDto = new HashMap<>();
+                                    docDto.put("id", doc.getId());
+                                    docDto.put("name", doc.getName());
+                                    docDto.put("fileType", doc.getFileType());
+                                    docDto.put("validationStatus", doc.getValidationStatus().name());
+                                    docDto.put("fileSizeMB", doc.getFileSizeMB());
+                                    return docDto;
+                                })
+                                .collect(Collectors.toList());
+                            dto.put("documents", docList);
+                        } catch (Exception e) {
+                            logger.warn("Could not load documents for application {}", app.getId());
+                            dto.put("documents", new ArrayList<>());
+                        }
+                        
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("applications", responseDtos);
+            response.put("count", responseDtos.size());
+            response.put("username", currentUsername);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error fetching user applications", e);
+            return ResponseEntity.status(500).body(createErrorResponse("FETCH_ERROR", "Erreur lors de la récupération des candidatures"));
+        }
+    }
+
+    @GetMapping("/can-submit")
+    public ResponseEntity<?> canSubmitApplication() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUsername = authentication.getName();
+            
+            List<Application> allApplications = applicationServiceImpl.getAllApplications();
+            boolean hasExistingApplication = allApplications.stream()
+                    .anyMatch(app -> app.getApplicantName() != null &&
+                            currentUsername.equals(app.getApplicantName().getUsername()));
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("hasAuth", authentication != null);
-            response.put("isAuthenticated", authentication != null && authentication.isAuthenticated());
-            response.put("hasAuthHeader", authHeader != null);
-            response.put("message", "Debug info collected");
+            response.put("canSubmit", !hasExistingApplication);
+            response.put("username", currentUsername);
             
             return ResponseEntity.ok(response);
-            
         } catch (Exception e) {
-            System.err.println("Debug error: " + e.getMessage());
-            e.printStackTrace();
-            
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Debug error: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            logger.error("Error checking application eligibility", e);
+            return ResponseEntity.status(500).body(createErrorResponse("CHECK_ERROR", "Erreur de vérification"));
         }
     }
-    
-    // Simple test endpoint for processing
-    @PostMapping("/{id}/process-test")
-    public ResponseEntity<?> processApplicationTest(@PathVariable Long id) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Test endpoint works");
-        response.put("applicationId", id);
-        return ResponseEntity.ok(response);
-    }
-    
-    // Endpoint pour traiter une candidature (approuver/rejeter)
-    @PostMapping("/{id}/process")
-    public ResponseEntity<?> processApplication(
-            @PathVariable Long id,
-            @RequestParam String decision,
-            @RequestParam(required = false) String comment) {
+
+    @GetMapping("/debug-user/{username}")
+    @PreAuthorize("hasAnyAuthority('ROLE_AGENT', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<?> debugUserData(@PathVariable String username) {
         try {
-            Optional<Application> appOpt = applicationRepository.findById(id);
-            if (!appOpt.isPresent()) {
-                Map<String, Object> error = new HashMap<>();
-                error.put("success", false);
-                error.put("message", "Candidature non trouvée");
-                return ResponseEntity.status(404).body(error);
+            Optional<User> userOpt = userRepository.findByUsername(username)
+                    .or(() -> userRepository.findByEmail(username));
+            
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(createErrorResponse("USER_NOT_FOUND", "Utilisateur non trouvé"));
             }
             
-            Application application = appOpt.get();
-            User candidate = application.getApplicantName();
+            User user = userOpt.get();
+            Map<String, Object> userData = new HashMap<>();
             
-            if ("APPROVED".equals(decision)) {
-                application.setStatus(com.groupe.gestin_inscription.model.Enums.ApplicationStatus.APPROVED);
-                // Envoyer email d'approbation avec lien vers fiche d'inscription
-                sendApprovalEmail(candidate, application.getId());
-            } else if ("REJECTED".equals(decision)) {
-                application.setStatus(com.groupe.gestin_inscription.model.Enums.ApplicationStatus.REJECTED);
-                // Envoyer email de rejet
-                sendRejectionEmail(candidate, comment);
+            // Données personnelles
+            userData.put("username", user.getUsername());
+            userData.put("firstName", user.getFirstName());
+            userData.put("lastName", user.getLastName());
+            userData.put("email", user.getEmail());
+            userData.put("phoneNumber", user.getPhoneNumber());
+            userData.put("address", user.getAddress());
+            userData.put("nationality", user.getNationality());
+            userData.put("dateOfBirth", user.getDateOfBirth());
+            userData.put("gender", user.getGender());
+            userData.put("userIdNum", user.getUserIdNum());
+            userData.put("emergencyContact", user.getEmergencyContact());
+            
+            // Historique académique
+            if (user.getAcademicHistory() != null) {
+                Map<String, Object> academic = new HashMap<>();
+                AcademicHistory ah = user.getAcademicHistory();
+                academic.put("lastInstitution", ah.getLastInstitution());
+                academic.put("specialization", ah.getSpecialization());
+                academic.put("subSpecialization", ah.getSubSpecialization());
+                academic.put("educationLevel", ah.getEducationLevel());
+                academic.put("gpa", ah.getGpa());
+                academic.put("honors", ah.getHonors());
+                academic.put("startDate", ah.getStartDate());
+                academic.put("endDate", ah.getEndDate());
+                userData.put("academicHistory", academic);
             }
+            
+            // Applications
+            List<Application> userApplications = applicationRepository.findAll().stream()
+                    .filter(app -> app.getApplicantName() != null && 
+                            user.getUsername().equals(app.getApplicantName().getUsername()))
+                    .collect(Collectors.toList());
+            
+            userData.put("applicationsCount", userApplications.size());
+            userData.put("applications", userApplications.stream()
+                    .map(this::convertToDto)
+                    .collect(Collectors.toList()));
+            
+            return ResponseEntity.ok(userData);
+            
+        } catch (Exception e) {
+            logger.error("Error in debug user data", e);
+            return ResponseEntity.status(500).body(createErrorResponse("DEBUG_ERROR", "Erreur de debug"));
+        }
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<List<Map<String, Object>>> getAllApplications() {
+        try {
+            List<Application> applications = applicationServiceImpl.getAllApplications();
+            List<Map<String, Object>> detailedApplications = applications.stream()
+                .map(this::convertApplicationToDto)
+                .collect(Collectors.toList());
+            return ResponseEntity.ok(detailedApplications);
+        } catch (Exception e) {
+            logger.error("Error fetching all applications", e);
+            throw e;
+        }
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_AGENT', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> getApplicationById(@PathVariable Long id) {
+        try {
+            logger.info("Fetching application with ID: {}", id);
+            
+            Optional<Application> applicationOpt = applicationRepository.findById(id);
+            if (applicationOpt.isEmpty()) {
+                logger.warn("Application not found with ID: {}", id);
+                return ResponseEntity.status(404).body(createErrorResponse("APPLICATION_NOT_FOUND", "Candidature non trouvée"));
+            }
+            
+            Application application = applicationOpt.get();
+            logger.info("Found application with ID: {}, converting to DTO", id);
+            
+            Map<String, Object> dto = convertApplicationToDto(application);
+            logger.info("Successfully converted application {} to DTO", id);
+            
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            logger.error("Error fetching application by ID: {}", id, e);
+            return ResponseEntity.status(500).body(createErrorResponse("INTERNAL_ERROR", "Erreur interne du serveur"));
+        }
+    }
+
+    private User findOrCreateUser(String username) {
+        return userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
+                .orElseThrow(() -> new NoSuchElementException("Utilisateur non trouvé: " + username));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updateUserFromFrontendData(User user, Map<String, Object> frontendData) {
+        logger.info("Updating user from frontend data. Data keys: {}", frontendData.keySet());
+        
+        // Update personal info from frontend format
+        Map<String, Object> personalInfo = (Map<String, Object>) frontendData.get("personalInfo");
+        if (personalInfo != null) {
+            logger.info("Processing personalInfo: {}", personalInfo.keySet());
+            
+            if (personalInfo.get("lastName") != null) {
+                user.setLastName((String) personalInfo.get("lastName"));
+                logger.info("Set lastName: {}", personalInfo.get("lastName"));
+            }
+            
+            List<String> firstNames = (List<String>) personalInfo.get("firstNames");
+            if (firstNames != null && !firstNames.isEmpty()) {
+                user.setFirstName(String.join(" ", firstNames));
+                logger.info("Set firstName: {}", String.join(" ", firstNames));
+            }
+            
+            if (personalInfo.get("birthDate") != null) {
+                try {
+                    user.setDateOfBirth(LocalDate.parse((String) personalInfo.get("birthDate")));
+                    logger.info("Set birthDate: {}", personalInfo.get("birthDate"));
+                } catch (Exception e) {
+                    logger.warn("Invalid birth date format: {}", personalInfo.get("birthDate"));
+                }
+            }
+            
+            if (personalInfo.get("nationality") != null) {
+                user.setNationality((String) personalInfo.get("nationality"));
+                logger.info("Set nationality: {}", personalInfo.get("nationality"));
+            }
+            
+            if (personalInfo.get("gender") != null) {
+                try {
+                    user.setGender(Gender.valueOf(((String) personalInfo.get("gender")).toUpperCase()));
+                    logger.info("Set gender: {}", personalInfo.get("gender"));
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Invalid gender value: {}", personalInfo.get("gender"));
+                }
+            }
+            
+            if (personalInfo.get("idType") != null) {
+                user.setUserIdNum((String) personalInfo.get("idType"));
+                logger.info("Set userIdNum: {}", personalInfo.get("idType"));
+            }
+        } else {
+            logger.warn("No personalInfo found in frontend data");
+        }
+
+        // Update contact info from frontend format
+        Map<String, Object> contactInfo = (Map<String, Object>) frontendData.get("contactInfo");
+        if (contactInfo != null) {
+            logger.info("Processing contactInfo: {}", contactInfo.keySet());
+            
+            if (contactInfo.get("email") != null) {
+                user.setEmail((String) contactInfo.get("email"));
+                logger.info("Set email: {}", contactInfo.get("email"));
+            }
+            
+            if (contactInfo.get("phone") != null) {
+                user.setPhoneNumber((String) contactInfo.get("phone"));
+                logger.info("Set phone: {}", contactInfo.get("phone"));
+            }
+            
+            Map<String, Object> address = (Map<String, Object>) contactInfo.get("address");
+            if (address != null) {
+                String fullAddress = String.join(", ", 
+                    (String) address.getOrDefault("street", ""),
+                    (String) address.getOrDefault("city", ""),
+                    (String) address.getOrDefault("postalCode", ""),
+                    (String) address.getOrDefault("country", "")
+                ).replaceAll(", ,", ",").replaceAll("^,|,$", "");
+                user.setAddress(fullAddress);
+                logger.info("Set address: {}", fullAddress);
+            }
+            
+            Map<String, Object> emergencyContact = (Map<String, Object>) contactInfo.get("emergencyContact");
+            if (emergencyContact != null) {
+                String emergencyInfo = String.format("%s (%s) - %s", 
+                    (String) emergencyContact.getOrDefault("name", ""),
+                    (String) emergencyContact.getOrDefault("relationship", ""),
+                    (String) emergencyContact.getOrDefault("phone", "")
+                );
+                user.setEmergencyContact(emergencyInfo);
+                logger.info("Set emergencyContact: {}", emergencyInfo);
+            }
+        } else {
+            logger.warn("No contactInfo found in frontend data");
+        }
+
+        // Update or create academic history from frontend format
+        Map<String, Object> academicHistory = (Map<String, Object>) frontendData.get("academicHistory");
+        if (academicHistory != null) {
+            logger.info("Processing academicHistory: {}", academicHistory.keySet());
+            
+            AcademicHistory academic = user.getAcademicHistory();
+            if (academic == null) {
+                academic = new AcademicHistory();
+                academic.setUser(user);
+                logger.info("Created new AcademicHistory for user");
+            }
+            
+            if (academicHistory.get("lastInstitution") != null) {
+                academic.setLastInstitution((String) academicHistory.get("lastInstitution"));
+                logger.info("Set lastInstitution: {}", academicHistory.get("lastInstitution"));
+            }
+            if (academicHistory.get("specialization") != null) {
+                academic.setSpecialization((String) academicHistory.get("specialization"));
+                logger.info("Set specialization: {}", academicHistory.get("specialization"));
+            }
+            if (academicHistory.get("subSpecialization") != null) {
+                academic.setSubSpecialization((String) academicHistory.get("subSpecialization"));
+                logger.info("Set subSpecialization: {}", academicHistory.get("subSpecialization"));
+            }
+            if (academicHistory.get("educationLevel") != null) {
+                academic.setEducationLevel((String) academicHistory.get("educationLevel"));
+                logger.info("Set educationLevel: {}", academicHistory.get("educationLevel"));
+            }
+            if (academicHistory.get("gpa") != null) {
+                academic.setGpa(((Number) academicHistory.get("gpa")).doubleValue());
+                logger.info("Set gpa: {}", academicHistory.get("gpa"));
+            }
+            
+            List<String> honors = (List<String>) academicHistory.get("honors");
+            if (honors != null && !honors.isEmpty()) {
+                academic.setHonors(String.join(", ", honors));
+                logger.info("Set honors: {}", String.join(", ", honors));
+            }
+            
+            if (academicHistory.get("startDate") != null) {
+                try {
+                    academic.setStartDate(LocalDate.parse((String) academicHistory.get("startDate")));
+                    logger.info("Set startDate: {}", academicHistory.get("startDate"));
+                } catch (Exception e) {
+                    logger.warn("Invalid start date format: {}", academicHistory.get("startDate"));
+                }
+            }
+            
+            if (academicHistory.get("endDate") != null) {
+                try {
+                    academic.setEndDate(LocalDate.parse((String) academicHistory.get("endDate")));
+                    logger.info("Set endDate: {}", academicHistory.get("endDate"));
+                } catch (Exception e) {
+                    logger.warn("Invalid end date format: {}", academicHistory.get("endDate"));
+                }
+            }
+            
+            academic = academicHistoryRepository.save(academic);
+            user.setAcademicHistory(academic);
+            logger.info("Saved AcademicHistory with ID: {}", academic.getId());
+        } else {
+            logger.warn("No academicHistory found in frontend data");
+        }
+    }
+
+    private Application createApplicationFromFrontendData(User user, Map<String, Object> frontendData, List<DocumentUploadRequestDTO> documents) {
+        Application application = new Application();
+        application.setApplicantName(user);
+        application.setSubmissionDate(LocalDateTime.now());
+        application.setLastUpdated(LocalDateTime.now());
+        application.setStatus(ApplicationStatus.UNDER_REVIEW);
+        
+        // Set target institution and specialization from frontend data
+        String targetInstitution = "DEFAULT_INSTITUTION";
+        String specialization = "DEFAULT_SPECIALIZATION";
+        
+        if (frontendData != null) {
+            if (frontendData.get("targetInstitution") != null) {
+                targetInstitution = (String) frontendData.get("targetInstitution");
+            }
+            if (frontendData.get("specialization") != null) {
+                specialization = (String) frontendData.get("specialization");
+            }
+            
+            // Fallback to academic history data
+            @SuppressWarnings("unchecked")
+            Map<String, Object> academicHistory = (Map<String, Object>) frontendData.get("academicHistory");
+            if (academicHistory != null) {
+                if ("DEFAULT_INSTITUTION".equals(targetInstitution) && academicHistory.get("lastInstitution") != null) {
+                    targetInstitution = (String) academicHistory.get("lastInstitution");
+                }
+                if ("DEFAULT_SPECIALIZATION".equals(specialization) && academicHistory.get("specialization") != null) {
+                    specialization = (String) academicHistory.get("specialization");
+                }
+            }
+        }
+        
+        // Final fallback to user's academic history
+        if (user.getAcademicHistory() != null) {
+            if ("DEFAULT_INSTITUTION".equals(targetInstitution) && user.getAcademicHistory().getLastInstitution() != null) {
+                targetInstitution = user.getAcademicHistory().getLastInstitution();
+            }
+            if ("DEFAULT_SPECIALIZATION".equals(specialization) && user.getAcademicHistory().getSpecialization() != null) {
+                specialization = user.getAcademicHistory().getSpecialization();
+            }
+        }
+        
+        application.setTargetInstitution(targetInstitution);
+        application.setSpecialization(specialization);
+        
+        // Calculate completion rate
+        double completionRate = calculateCompletionRate(user, documents);
+        application.setCompletionRate(completionRate);
+        
+        return applicationRepository.save(application);
+    }
+
+    private double calculateCompletionRate(User user, List<DocumentUploadRequestDTO> documents) {
+        int totalFields = 12;
+        int completedFields = 0;
+        
+        if (user.getFirstName() != null && !user.getFirstName().isEmpty()) completedFields++;
+        if (user.getLastName() != null && !user.getLastName().isEmpty()) completedFields++;
+        if (user.getEmail() != null && !user.getEmail().isEmpty()) completedFields++;
+        if (user.getPhoneNumber() != null && !user.getPhoneNumber().isEmpty()) completedFields++;
+        if (user.getAddress() != null && !user.getAddress().isEmpty()) completedFields++;
+        if (user.getNationality() != null && !user.getNationality().isEmpty()) completedFields++;
+        if (user.getDateOfBirth() != null) completedFields++;
+        if (user.getGender() != null) completedFields++;
+        if (user.getEmergencyContact() != null && !user.getEmergencyContact().isEmpty()) completedFields++;
+        if (user.getUserIdNum() != null && !user.getUserIdNum().isEmpty()) completedFields++;
+        
+        if (user.getAcademicHistory() != null && 
+            user.getAcademicHistory().getLastInstitution() != null && 
+            !user.getAcademicHistory().getLastInstitution().isEmpty()) completedFields++;
+        
+        if (documents != null && !documents.isEmpty()) completedFields++;
+        
+        return ((double) completedFields / totalFields) * 100;
+    }
+
+    private String getCurrentUsername(String email) {
+        if (email != null && !email.trim().isEmpty()) {
+            return email;
+        }
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("Authentification requise");
+        }
+        
+        return authentication.getName();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> createErrorResponse(String code, String message) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("success", false);
+        error.put("code", code);
+        error.put("message", message);
+        return error;
+    }
+
+    private ApplicationStatusResponseDto convertToDto(Application application) {
+        ApplicationStatusResponseDto dto = new ApplicationStatusResponseDto();
+        dto.setApplicationId(application.getId());
+        dto.setStatus(application.getStatus().name());
+        dto.setCompletionRate(application.getCompletionRate());
+        dto.setSubmissionDate(application.getSubmissionDate());
+        dto.setCreatedAt(application.getCreatedAt());
+
+        User applicant = application.getApplicantName();
+        if (applicant != null) {
+            dto.setUserIdNum(applicant.getUserIdNum());
+            dto.setUsername(applicant.getUsername());
+            
+            String firstName = applicant.getFirstName() != null ? applicant.getFirstName() : "";
+            String lastName = applicant.getLastName() != null ? applicant.getLastName() : "";
+            String fullName = (firstName + " " + lastName).trim();
+            dto.setApplicantName(fullName.isEmpty() ? "N/A" : fullName);
+        }
+
+        return dto;
+    }
+
+    @GetMapping("/heatmap-data")
+    @PreAuthorize("hasAuthority('ROLE_AGENT') or hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<List<Map<String, Object>>> getHeatmapData() {
+        try {
+            List<Application> applications = applicationRepository.findAll();
+            
+            Map<String, Long> institutionCounts = applications.stream()
+                .filter(app -> app.getTargetInstitution() != null)
+                .collect(Collectors.groupingBy(
+                    Application::getTargetInstitution,
+                    Collectors.counting()
+                ));
+            
+            List<Map<String, Object>> heatmapData = institutionCounts.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("institution", entry.getKey());
+                    data.put("count", entry.getValue());
+                    return data;
+                })
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(heatmapData);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Méthode complète pour les agents - retourne TOUTES les données du candidat
+    private Map<String, Object> convertApplicationToDto(Application application) {
+        Map<String, Object> dto = new HashMap<>();
+        
+        try {
+            // Informations de base de l'application
+            dto.put("applicationId", application.getId());
+            dto.put("status", application.getStatus() != null ? application.getStatus().name() : "UNKNOWN");
+            dto.put("completionRate", application.getCompletionRate() != null ? application.getCompletionRate() : Double.valueOf(0.0));
+            dto.put("submissionDate", application.getSubmissionDate());
+            dto.put("lastUpdated", application.getLastUpdated());
+            dto.put("targetInstitution", application.getTargetInstitution() != null ? application.getTargetInstitution() : "N/A");
+            dto.put("specialization", application.getSpecialization() != null ? application.getSpecialization() : "N/A");
+            
+            User applicant = application.getApplicantName();
+            if (applicant != null) {
+                // Informations personnelles complètes
+                Map<String, Object> personalInfo = new HashMap<>();
+                personalInfo.put("firstName", applicant.getFirstName() != null ? applicant.getFirstName() : "");
+                personalInfo.put("lastName", applicant.getLastName() != null ? applicant.getLastName() : "");
+                personalInfo.put("email", applicant.getEmail() != null ? applicant.getEmail() : "");
+                personalInfo.put("phoneNumber", applicant.getPhoneNumber() != null ? applicant.getPhoneNumber() : "");
+                personalInfo.put("address", applicant.getAddress() != null ? applicant.getAddress() : "");
+                personalInfo.put("nationality", applicant.getNationality() != null ? applicant.getNationality() : "");
+                personalInfo.put("dateOfBirth", applicant.getDateOfBirth());
+                personalInfo.put("gender", applicant.getGender() != null ? applicant.getGender().name() : null);
+                personalInfo.put("userIdNum", applicant.getUserIdNum() != null ? applicant.getUserIdNum() : "");
+                personalInfo.put("emergencyContact", applicant.getEmergencyContact() != null ? applicant.getEmergencyContact() : "");
+                personalInfo.put("username", applicant.getUsername() != null ? applicant.getUsername() : "");
+                dto.put("personalInfo", personalInfo);
+                
+                // Nom complet pour affichage
+                String fullName = (personalInfo.get("firstName") + " " + personalInfo.get("lastName")).trim();
+                dto.put("applicantName", fullName.isEmpty() ? "N/A" : fullName);
+                
+                // Historique académique complet
+                if (applicant.getAcademicHistory() != null) {
+                    Map<String, Object> academicInfo = new HashMap<>();
+                    AcademicHistory academic = applicant.getAcademicHistory();
+                    academicInfo.put("lastInstitution", academic.getLastInstitution() != null ? academic.getLastInstitution() : "");
+                    academicInfo.put("specialization", academic.getSpecialization() != null ? academic.getSpecialization() : "");
+                    academicInfo.put("subSpecialization", academic.getSubSpecialization() != null ? academic.getSubSpecialization() : "");
+                    academicInfo.put("educationLevel", academic.getEducationLevel() != null ? academic.getEducationLevel() : "");
+                    academicInfo.put("gpa", academic.getGpa() != null ? academic.getGpa() : Double.valueOf(0.0));
+                    academicInfo.put("honors", academic.getHonors() != null ? academic.getHonors() : "");
+                    academicInfo.put("startDate", academic.getStartDate());
+                    academicInfo.put("endDate", academic.getEndDate());
+                    dto.put("academicHistory", academicInfo);
+                } else {
+                    dto.put("academicHistory", new HashMap<>());
+                }
+            } else {
+                dto.put("personalInfo", new HashMap<>());
+                dto.put("academicHistory", new HashMap<>());
+                dto.put("applicantName", "N/A");
+            }
+            
+            // Documents soumis - utiliser le service pour éviter les problèmes de lazy loading
+            try {
+                List<com.groupe.gestin_inscription.model.Document> documents = documentService.getDocumentsByApplicationId(application.getId());
+                List<Map<String, Object>> documentList = documents.stream()
+                    .map(doc -> {
+                        Map<String, Object> docInfo = new HashMap<>();
+                        docInfo.put("id", doc.getId());
+                        docInfo.put("name", doc.getName() != null ? doc.getName() : "Document");
+                        docInfo.put("fileType", doc.getFileType() != null ? doc.getFileType() : "unknown");
+                        docInfo.put("filePath", doc.getFilePath() != null ? doc.getFilePath() : "");
+                        docInfo.put("fileSizeMB", doc.getFileSizeMB());
+                        docInfo.put("validationStatus", doc.getValidationStatus() != null ? doc.getValidationStatus().name() : "PENDING");
+                        return docInfo;
+                    })
+                    .collect(Collectors.toList());
+                dto.put("documents", documentList);
+                dto.put("documentCount", documentList.size());
+            } catch (Exception e) {
+                logger.warn("Could not load documents for application {}: {}", application.getId(), e.getMessage());
+                dto.put("documents", new ArrayList<>());
+                dto.put("documentCount", 0);
+            }
+            
+            logger.debug("Successfully converted application {} to DTO with {} documents", 
+                application.getId(), ((List<?>) dto.get("documents")).size());
+            
+        } catch (Exception e) {
+            logger.error("Error converting application {} to DTO: {}", application.getId(), e.getMessage(), e);
+            throw e;
+        }
+        
+        return dto;
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasAuthority('ROLE_AGENT') or hasAuthority('ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> getStats() {
+        try {
+            List<Application> applications = applicationRepository.findAll();
+            List<User> users = userRepository.findAll();
+            
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalUsers", users.size());
+            stats.put("totalApplications", applications.size());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("stats", stats);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error fetching stats", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(createErrorResponse("STATS_ERROR", "Erreur lors de la récupération des statistiques"));
+        }
+    }
+
+    @PutMapping("/status/{applicationId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_AGENT', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<?> updateApplicationStatus(
+            @PathVariable Long applicationId, 
+            @RequestParam String status) {
+        try {
+            Optional<Application> applicationOpt = applicationRepository.findById(applicationId);
+            if (applicationOpt.isEmpty()) {
+                return ResponseEntity.status(404)
+                    .body(createErrorResponse("APPLICATION_NOT_FOUND", "Candidature non trouvée"));
+            }
+            
+            Application application = applicationOpt.get();
+            ApplicationStatus newStatus = ApplicationStatus.valueOf(status.toUpperCase());
+            application.setStatus(newStatus);
+            application.setLastUpdated(LocalDateTime.now());
             
             applicationRepository.save(application);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Candidature traitée avec succès. Email envoyé au candidat.");
-            response.put("newStatus", application.getStatus().name());
-            response.put("applicationId", id);
+            response.put("message", "Statut mis à jour avec succès");
+            response.put("newStatus", newStatus.name());
             
             return ResponseEntity.ok(response);
-            
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(createErrorResponse("INVALID_STATUS", "Statut invalide: " + status));
         } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Erreur: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            logger.error("Error updating application status", e);
+            return ResponseEntity.status(500)
+                .body(createErrorResponse("UPDATE_ERROR", "Erreur lors de la mise à jour du statut"));
         }
-    }
-    
-    private void sendApprovalEmail(User candidate, Long applicationId) {
-        try {
-            String candidateName = (candidate.getFirstName() != null ? candidate.getFirstName() + " " : "") +
-                                 (candidate.getLastName() != null ? candidate.getLastName() : "");
-            
-            emailNotificationService.sendApplicationApprovalEmail(
-                candidate.getEmail(),
-                candidateName.trim()
-            );
-        } catch (Exception e) {
-            System.err.println("Erreur envoi email approbation: " + e.getMessage());
-        }
-    }
-    
-    private void sendRejectionEmail(User candidate, String comment) {
-        try {
-            String candidateName = (candidate.getFirstName() != null ? candidate.getFirstName() + " " : "") +
-                                 (candidate.getLastName() != null ? candidate.getLastName() : "");
-            
-            String rejectionMessage = comment != null && !comment.trim().isEmpty() ? 
-                "Motif du rejet: " + comment : 
-                "Votre dossier ne répond pas aux critères d'admission pour cette session.";
-            
-            emailNotificationService.sendApplicationStatusUpdateEmail(
-                candidate.getEmail(),
-                candidateName.trim(),
-                "REJETÉE",
-                rejectionMessage
-            );
-        } catch (Exception e) {
-            System.err.println("Erreur envoi email rejet: " + e.getMessage());
-        }
-    }
-    
-    // Original process method with full logic (commented out for debugging)
-    /*
-    @PostMapping("/{id}/process-full")
-    public ResponseEntity<?> processApplicationFull(
-            @PathVariable Long id,
-            @RequestParam String decision,
-            @RequestParam(required = false) String comment) {
-        try {
-            System.out.println("=== PROCESS APPLICATION DEBUG ===");
-            System.out.println("Application ID: " + id);
-            System.out.println("Decision: " + decision);
-            System.out.println("Comment: " + comment);
-            
-            Optional<Application> appOpt = applicationRepository.findById(id);
-            if (!appOpt.isPresent()) {
-                System.out.println("Application not found with ID: " + id);
-                Map<String, Object> error = new HashMap<>();
-                error.put("success", false);
-                error.put("message", "Candidature non trouvée");
-                return ResponseEntity.status(404).body(error);
-            }
-            
-            Application application = appOpt.get();
-            System.out.println("Found application: " + application.getId() + ", current status: " + application.getStatus());
-            
-            if ("APPROVED".equals(decision)) {
-                application.setStatus(com.groupe.gestin_inscription.model.Enums.ApplicationStatus.APPROVED);
-                System.out.println("Setting status to APPROVED");
-            } else if ("REJECTED".equals(decision)) {
-                application.setStatus(com.groupe.gestin_inscription.model.Enums.ApplicationStatus.REJECTED);
-                System.out.println("Setting status to REJECTED");
-            } else {
-                System.out.println("Invalid decision: " + decision);
-                Map<String, Object> error = new HashMap<>();
-                error.put("success", false);
-                error.put("message", "Décision invalide: " + decision);
-                return ResponseEntity.status(400).body(error);
-            }
-            
-            System.out.println("Saving application with new status: " + application.getStatus());
-            Application savedApp = applicationRepository.save(application);
-            System.out.println("Application saved successfully with status: " + savedApp.getStatus());
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Candidature traitée avec succès");
-            response.put("newStatus", savedApp.getStatus().name());
-            response.put("applicationId", savedApp.getId());
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            System.err.println("Error processing application " + id + ": " + e.getMessage());
-            System.err.println("Exception type: " + e.getClass().getSimpleName());
-            e.printStackTrace();
-            
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Erreur lors du traitement de la candidature: " + e.getMessage());
-            error.put("details", e.getClass().getSimpleName() + ": " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
-        }
-    }
-    */
-    
-    // Endpoint pour récupérer une candidature par ID
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getApplicationById(@PathVariable Long id) {
-        try {
-            Optional<Application> appOpt = applicationRepository.findById(id);
-            if (!appOpt.isPresent()) {
-                Map<String, Object> error = new HashMap<>();
-                error.put("success", false);
-                error.put("message", "Candidature non trouvée");
-                return ResponseEntity.status(404).body(error);
-            }
-            
-            Application application = appOpt.get();
-            Map<String, Object> dto = convertApplicationToDto(application);
-            
-            return ResponseEntity.ok(dto);
-            
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Erreur: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
-        }
-    }
-    
-    // Endpoint pour les données de la carte thermique
-    @GetMapping("/heatmap-data")
-    public ResponseEntity<?> getHeatmapData() {
-        try {
-            List<Application> allApplications = applicationRepository.findAll();
-            
-            // Compter les inscriptions par université (basé sur targetInstitution ou lastInstitution)
-            Map<String, Integer> universityCount = new HashMap<>();
-            
-            for (Application app : allApplications) {
-                String university = "Université Inconnue";
-                
-                // Essayer de récupérer l'université depuis les données de l'application
-                // Pour l'instant, on utilise des universités du Cameroun comme exemple
-                if (app.getId() % 4 == 0) university = "Université de Yaoundé I";
-                else if (app.getId() % 4 == 1) university = "Université de Douala";
-                else if (app.getId() % 4 == 2) university = "Université de Dschang";
-                else university = "Université de Ngaoundéré";
-                
-                universityCount.put(university, universityCount.getOrDefault(university, 0) + 1);
-            }
-            
-            // Créer les données pour la carte thermique
-            List<Map<String, Object>> heatmapData = new ArrayList<>();
-            
-            // Coordonnées des principales universités du Cameroun
-            Map<String, double[]> universityCoords = new HashMap<>();
-            universityCoords.put("Université de Yaoundé I", new double[]{3.8480, 11.5021});
-            universityCoords.put("Université de Douala", new double[]{4.0511, 9.7679});
-            universityCoords.put("Université de Dschang", new double[]{5.4467, 10.0594});
-            universityCoords.put("Université de Ngaoundéré", new double[]{7.3167, 13.5833});
-            
-            for (Map.Entry<String, Integer> entry : universityCount.entrySet()) {
-                String university = entry.getKey();
-                Integer count = entry.getValue();
-                double[] coords = universityCoords.get(university);
-                
-                if (coords != null) {
-                    Map<String, Object> point = new HashMap<>();
-                    point.put("name", university);
-                    point.put("lat", coords[0]);
-                    point.put("lng", coords[1]);
-                    point.put("count", count);
-                    point.put("intensity", Math.min(count / 10.0, 1.0)); // Normaliser l'intensité
-                    heatmapData.add(point);
-                }
-            }
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", heatmapData);
-            response.put("totalApplications", allApplications.size());
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Erreur: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
-        }
-    }
-    
-    // Endpoint pour télécharger la fiche d'inscription PDF (candidatures approuvées uniquement)
-    @GetMapping("/{id}/registration-form")
-    @PreAuthorize("hasAuthority('ROLE_CANDIDATE') or hasAuthority('ROLE_AGENT') or hasAuthority('ROLE_SUPER_ADMIN')")
-    public ResponseEntity<byte[]> downloadRegistrationForm(@PathVariable Long id) {
-        try {
-            Optional<Application> appOpt = applicationRepository.findById(id);
-            if (!appOpt.isPresent()) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            Application application = appOpt.get();
-            
-            // Vérifier que la candidature est approuvée
-            if (application.getStatus() != com.groupe.gestin_inscription.model.Enums.ApplicationStatus.APPROVED) {
-                return ResponseEntity.status(403).build();
-            }
-            
-            // Générer le PDF
-            byte[] pdfBytes = generateRegistrationFormPDF(application);
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("attachment", "fiche_inscription_" + id + ".pdf");
-            
-            return ResponseEntity.ok()
-                .headers(headers)
-                .body(pdfBytes);
-                
-        } catch (Exception e) {
-            System.err.println("Error generating registration form: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).build();
-        }
-    }
-    
-    private byte[] generateRegistrationFormPDF(Application application) throws IOException {
-        PDDocument document = new PDDocument();
-        PDPage page = new PDPage(PDRectangle.A4);
-        document.addPage(page);
-        
-        PDPageContentStream contentStream = new PDPageContentStream(document, page);
-        
-        float margin = 50;
-        float yPosition = page.getMediaBox().getHeight() - margin;
-        
-        // Titre principal
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 18);
-        contentStream.newLineAtOffset(200, yPosition);
-        contentStream.showText("FICHE D'INSCRIPTION");
-        contentStream.endText();
-        yPosition -= 40;
-        
-        // Informations de l'établissement
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
-        contentStream.newLineAtOffset(180, yPosition);
-        contentStream.showText("UNIVERSITÉ DE YAOUNDÉ I");
-        contentStream.endText();
-        yPosition -= 20;
-        
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA, 10);
-        contentStream.newLineAtOffset(200, yPosition);
-        contentStream.showText("ANNÉE ACADÉMIQUE 2024-2025");
-        contentStream.endText();
-        yPosition -= 50;
-        
-        // Informations personnelles
-        User user = application.getApplicantName();
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
-        contentStream.newLineAtOffset(margin, yPosition);
-        contentStream.showText("INFORMATIONS PERSONNELLES");
-        contentStream.endText();
-        yPosition -= 30;
-        
-        String[] personalInfo = {
-            "Nom: " + (user.getLastName() != null ? user.getLastName().toUpperCase() : "N/A"),
-            "Prénom(s): " + (user.getFirstName() != null ? user.getFirstName() : "N/A"),
-            "Email: " + (user.getEmail() != null ? user.getEmail() : "N/A"),
-            "Téléphone: " + (user.getPhoneNumber() != null ? user.getPhoneNumber() : "N/A")
-        };
-        
-        for (String info : personalInfo) {
-            contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA, 10);
-            contentStream.newLineAtOffset(margin, yPosition);
-            contentStream.showText(info);
-            contentStream.endText();
-            yPosition -= 15;
-        }
-        
-        yPosition -= 20;
-        
-        // Formation
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
-        contentStream.newLineAtOffset(margin, yPosition);
-        contentStream.showText("FORMATION");
-        contentStream.endText();
-        yPosition -= 30;
-        
-        String[] formationInfo = {
-            "Filière: Sciences Informatiques",
-            "Niveau: Licence 1",
-            "Durée: 3 ans",
-            "Date d'inscription: " + (application.getSubmissionDate() != null ? 
-                application.getSubmissionDate().toLocalDate().toString() : "N/A"),
-            "Statut: APPROUVÉ"
-        };
-        
-        for (String info : formationInfo) {
-            contentStream.beginText();
-            contentStream.setFont(PDType1Font.HELVETICA, 10);
-            contentStream.newLineAtOffset(margin, yPosition);
-            contentStream.showText(info);
-            contentStream.endText();
-            yPosition -= 15;
-        }
-        
-        // Espace photo
-        float photoX = 400;
-        float photoY = yPosition + 100;
-        contentStream.addRect(photoX, photoY, 100, 120);
-        contentStream.stroke();
-        
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA, 8);
-        contentStream.newLineAtOffset(photoX + 30, photoY + 60);
-        contentStream.showText("PHOTO");
-        contentStream.endText();
-        
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA, 8);
-        contentStream.newLineAtOffset(photoX + 20, photoY + 45);
-        contentStream.showText("3.5 x 4.5 cm");
-        contentStream.endText();
-        
-        yPosition -= 80;
-        
-        // Signatures
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA, 10);
-        contentStream.newLineAtOffset(margin, yPosition);
-        contentStream.showText("Signature de l'étudiant:");
-        contentStream.endText();
-        
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA, 10);
-        contentStream.newLineAtOffset(350, yPosition);
-        contentStream.showText("Cachet de l'établissement:");
-        contentStream.endText();
-        
-        yPosition -= 80;
-        
-        // Numéro d'inscription
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
-        contentStream.newLineAtOffset(180, yPosition);
-        contentStream.showText("Numéro d'inscription: INS-" + String.format("%06d", application.getId()));
-        contentStream.endText();
-        
-        contentStream.close();
-        
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        document.save(baos);
-        document.close();
-        
-        return baos.toByteArray();
-    }
-    
-    // Méthode utilitaire pour convertir Application en DTO
-    private Map<String, Object> convertApplicationToDto(Application application) {
-        Map<String, Object> dto = new HashMap<>();
-        dto.put("id", application.getId());
-        
-        Map<String, Object> candidat = new HashMap<>();
-        
-        if (application.getApplicantName() != null) {
-            User user = application.getApplicantName();
-            candidat.put("nom", user.getLastName() != null ? user.getLastName() : "Nom");
-            candidat.put("prenom", user.getFirstName() != null ? user.getFirstName() : "Prénom");
-            candidat.put("email", user.getEmail() != null ? user.getEmail() : "email@example.com");
-            candidat.put("telephone", user.getPhoneNumber() != null ? user.getPhoneNumber() : "");
-        } else {
-            candidat.put("nom", "Nom inconnu");
-            candidat.put("prenom", "Prénom inconnu");
-            candidat.put("email", "email@inconnu.com");
-            candidat.put("telephone", "");
-        }
-        
-        dto.put("candidat", candidat);
-        dto.put("status", application.getStatus() != null ? application.getStatus().name() : "UNDER_REVIEW");
-        dto.put("dateCreation", application.getSubmissionDate() != null ? 
-            application.getSubmissionDate().toString() : null);
-        // Récupérer les vrais documents depuis la base de données
-        List<Document> documents = documentRepository.findByApplicationId(application.getId());
-        List<Map<String, Object>> documentsList = documents.stream()
-            .map(doc -> {
-                Map<String, Object> docMap = new HashMap<>();
-                docMap.put("id", doc.getId());
-                docMap.put("nom", doc.getName());
-                docMap.put("type", doc.getFileType());
-                docMap.put("taille", doc.getFileSizeMB());
-                docMap.put("statut", doc.getValidationStatus() != null ? doc.getValidationStatus().name() : "PENDING");
-                return docMap;
-            })
-            .collect(Collectors.toList());
-        dto.put("documents", documentsList);
-        
-        return dto;
     }
 }

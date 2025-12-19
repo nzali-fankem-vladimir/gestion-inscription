@@ -50,6 +50,7 @@ public class DocumentManagerService {
         }
         
         String fileExtension = getFileExtension(file.getOriginalFilename()).toLowerCase();
+        String contentType = file.getContentType();
         long fileSize = file.getSize();
 
         // Check file size limit
@@ -59,29 +60,38 @@ public class DocumentManagerService {
             return false;
         }
 
-        // Validate file extension based on document type
-        boolean isValidFormat = false;
-        switch (documentType.toUpperCase()) {
-            case "BACCALAUREATE":
-            case "HIGHER_DIPLOMA":
-            case "BIRTH_CERTIFICATE":
-                isValidFormat = Arrays.asList(validationConfig.getAllowedDocumentFormats()).contains(fileExtension);
-                break;
-            case "ID_CARD_FRONT":
-            case "ID_CARD_BACK":
-            case "IDENTITY_PHOTO":
-                isValidFormat = Arrays.asList(validationConfig.getAllowedImageFormats()).contains(fileExtension);
-                break;
-            default:
-                // Default to PDF for unknown document types
-                isValidFormat = "pdf".equals(fileExtension);
-        }
+        // Normalize file extensions and content types
+        boolean isValidFormat = isValidFileFormat(fileExtension, contentType);
         
         if (!isValidFormat) {
-            log.warn("Invalid file format {} for document type: {}", fileExtension, documentType);
+            log.warn("Invalid file format {} (content-type: {}) for document type: {}", 
+                    fileExtension, contentType, documentType);
         }
         
         return isValidFormat;
+    }
+    
+    private boolean isValidFileFormat(String fileExtension, String contentType) {
+        // Accepted image formats (including JFIF which is JPEG)
+        if ("jpg".equals(fileExtension) || "jpeg".equals(fileExtension) || "jfif".equals(fileExtension) ||
+            "png".equals(fileExtension) || "gif".equals(fileExtension)) {
+            return true;
+        }
+        
+        // Check by content type for better validation
+        if (contentType != null) {
+            if (contentType.startsWith("image/jpeg") || contentType.startsWith("image/jpg") ||
+                contentType.startsWith("image/png") || contentType.startsWith("image/gif")) {
+                return true;
+            }
+        }
+        
+        // PDF documents
+        if ("pdf".equals(fileExtension) || (contentType != null && contentType.equals("application/pdf"))) {
+            return true;
+        }
+        
+        return false;
     }
 
     /**

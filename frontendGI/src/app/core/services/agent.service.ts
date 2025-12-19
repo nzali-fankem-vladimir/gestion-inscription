@@ -18,7 +18,20 @@ export class AgentService {
     return this.http.get<Agent[]>(`${environment.apiUrl}/agents/all`);
   }
 
-
+  createAgent(agent: Agent): Observable<Agent> {
+    // Mapper les données frontend vers backend
+    const agentData = {
+      username: agent.firstName && agent.lastName ? 
+        `${agent.firstName.toLowerCase()}.${agent.lastName.toLowerCase()}` : 
+        `${(agent.prenom || '').toLowerCase()}.${(agent.nom || '').toLowerCase()}`,
+      email: agent.email || '',
+      firstName: agent.firstName || agent.prenom || '',
+      lastName: agent.lastName || agent.nom || '',
+      password: agent.password || ''
+    };
+    
+    return this.http.post<Agent>(`${environment.apiUrl}/agents`, agentData);
+  }
 
   updateAgent(id: number, agent: Agent): Observable<Agent> {
     // Mapper les données frontend vers backend

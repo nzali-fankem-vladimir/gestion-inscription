@@ -47,7 +47,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
         //checking the type
         if (!documentManagerService.verifyFormat(docDTO.getDocumentType(), fileContent)) {
-            throw new FileValidationException("Invalid document format. Accepted types are PDF, JPG, and PNG.");
+            throw new FileValidationException("Invalid document format. Accepted types are PDF, JPG, JPEG, JFIF, PNG, and GIF.");
         }
         //checking the size
         if (fileContent.getSize() > 5 * 1024 * 1024) { // 5MB max size

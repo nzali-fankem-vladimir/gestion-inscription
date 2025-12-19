@@ -3,7 +3,6 @@ import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/role.guard';
 import { LoginComponent } from './features/auth/login.component';
 import { RegisterComponent } from './features/auth/register.component';
-import { DashboardComponent } from './features/dashboard/dashboard.component';
 
 export const routes: Routes = [
   {
@@ -20,7 +19,7 @@ export const routes: Routes = [
   // CANDIDATE ROUTES
   { 
     path: 'candidate/dashboard', 
-    component: DashboardComponent, 
+    loadComponent: () => import('./features/candidats/candidate-dashboard.component').then(m => m.CandidateDashboardComponent),
     canActivate: [RoleGuard],
     data: { roles: ['CANDIDATE'] }
   },
@@ -46,7 +45,7 @@ export const routes: Routes = [
   // AGENT ROUTES
   { 
     path: 'agent/dashboard', 
-    component: DashboardComponent, 
+    loadComponent: () => import('./features/agents/agent-dashboard.component').then(m => m.AgentDashboardComponent),
     canActivate: [RoleGuard],
     data: { roles: ['AGENT'] }
   },
@@ -72,7 +71,7 @@ export const routes: Routes = [
   // SUPER_ADMIN ROUTES
   { 
     path: 'admin/dashboard', 
-    component: DashboardComponent, 
+    loadComponent: () => import('./features/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent),
     canActivate: [RoleGuard],
     data: { roles: ['SUPER_ADMIN'] }
   },

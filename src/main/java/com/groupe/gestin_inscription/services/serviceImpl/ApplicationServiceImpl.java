@@ -549,4 +549,16 @@ public class ApplicationServiceImpl implements ApplicationService {
         if (documents != null && !documents.isEmpty()) completedFields++;
         return ((double) completedFields / totalFields) * 100;
     }
+    
+    // Check if user owns the application
+    public boolean isOwner(Long applicationId, String username) {
+        try {
+            Application application = getApplicationById(applicationId);
+            return application.getApplicantName() != null && 
+                   (username.equals(application.getApplicantName().getUsername()) || 
+                    username.equals(application.getApplicantName().getEmail()));
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

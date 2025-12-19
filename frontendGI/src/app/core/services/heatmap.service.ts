@@ -24,6 +24,6 @@ export class HeatmapService {
   constructor(private http: HttpClient) {}
 
   getHeatmapData(): Observable<HeatmapResponse> {
-    return this.http.get<HeatmapResponse>(`${environment.apiUrl}/applications/heatmap-data`);
+    return this.http.get<HeatmapResponse>(`${environment.apiUrl}/simple-admin/heatmap`);
   }
 }

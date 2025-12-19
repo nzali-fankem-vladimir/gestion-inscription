@@ -17,6 +17,26 @@ import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.groupe.gestin_inscription.dto.request.UpdateAgentRequestDTO;
 
+class CreateAgentRequestDTO {
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String username;
+    private String password;
+    
+    // Getters and setters
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+}
+
 @RestController
 @RequestMapping("/api/agents")
 public class AgentController {
@@ -26,6 +46,21 @@ public class AgentController {
     
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<AgentResponseDTO> createAgent(@RequestBody CreateAgentRequestDTO request) {
+        Administrator agent = new Administrator();
+        agent.setFirstName(request.getFirstName());
+        agent.setLastName(request.getLastName());
+        agent.setEmail(request.getEmail());
+        agent.setUserName(request.getUsername());
+        agent.setPassword(passwordEncoder.encode(request.getPassword()));
+        agent.setRole(AdministratorRole.AGENT);
+        
+        Administrator savedAgent = administratorRepository.save(agent);
+        return ResponseEntity.ok(AgentResponseDTO.fromAdministrator(savedAgent));
+    }
 
     @GetMapping("/all")
     @PreAuthorize("hasRole('SUPER_ADMIN')")

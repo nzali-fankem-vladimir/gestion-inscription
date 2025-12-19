@@ -1,0 +1,280 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.groupe:gestin_inscription >--------------------
+[INFO] Building gestin_inscription 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.4:run (default-cli) > test-compile @ gestin_inscription >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ gestin_inscription ---
+[INFO] Copying 4 resources from src\main\resources to target\classes
+[INFO] Copying 3 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ gestin_inscription ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 115 source files with javac [debug parameters release 17] to target\classes
+[INFO] /d:/mrdartman/document/gestion_inscription-develop/gestion_inscription-develop/gestin_inscription/src/main/java/com/groupe/gestin_inscription/security/Config/WebSecurityConfig.java: d:\mrdartman\document\gestion_inscription-develop\gestion_inscription-develop\gestin_inscription\src\main\java\com\groupe\gestin_inscription\security\Config\WebSecurityConfig.java uses or overrides a deprecated API.
+[INFO] /d:/mrdartman/document/gestion_inscription-develop/gestion_inscription-develop/gestin_inscription/src/main/java/com/groupe/gestin_inscription/security/Config/WebSecurityConfig.java: Recompile with -Xlint:deprecation for details.
+[INFO] /d:/mrdartman/document/gestion_inscription-develop/gestion_inscription-develop/gestin_inscription/src/main/java/com/groupe/gestin_inscription/services/serviceImpl/ApplicationServiceImpl.java: Some input files use unchecked or unsafe operations.
+[INFO] /d:/mrdartman/document/gestion_inscription-develop/gestion_inscription-develop/gestin_inscription/src/main/java/com/groupe/gestin_inscription/services/serviceImpl/ApplicationServiceImpl.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ gestin_inscription ---
+[INFO] skip non existing resourceDirectory d:\mrdartman\document\gestion_inscription-develop\gestion_inscription-develop\gestin_inscription\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ gestin_inscription ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 2 source files with javac [debug parameters release 17] to target\test-classes
+[INFO] 
+[INFO] <<< spring-boot:3.5.4:run (default-cli) < test-compile @ gestin_inscription <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.4:run (default-cli) @ gestin_inscription ---
+[INFO] Attaching agents: []
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.4)
+
+2025-10-04T11:05:31.850+01:00  INFO 28364 --- [sigec] [  restartedMain] c.g.g.GestinInscriptionApplication       : Starting GestinInscriptionApplication using Java 17.0.16 with PID 28364 (d:\mrdartman\document\gestion_inscription-develop\gestion_inscription-develop\gestin_inscription\target\classes started by dell in d:\mrdartman\document\gestion_inscription-develop\gestion_inscription-develop\gestin_inscription)
+2025-10-04T11:05:31.852+01:00  INFO 28364 --- [sigec] [  restartedMain] c.g.g.GestinInscriptionApplication       : The following 1 profile is active: "dev"
+2025-10-04T11:05:32.033+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\dell\.m2\repository\org\bytedeco\opencv\4.7.0-1.5.9\opencv-4.7.0-1.5.9.jar referenced one or more files that do not exist: file:/C:/Users/dell/.m2/repository/org/bytedeco/opencv/4.7.0-1.5.9/javacpp.jar
+2025-10-04T11:05:32.033+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.b.devtools.restart.ChangeableUrls    : The Class-Path manifest attribute in C:\Users\dell\.m2\repository\org\bytedeco\openblas\0.3.23-1.5.9\openblas-0.3.23-1.5.9.jar referenced one or more files that do not exist: file:/C:/Users/dell/.m2/repository/org/bytedeco/openblas/0.3.23-1.5.9/javacpp.jar
+2025-10-04T11:05:32.033+01:00  INFO 28364 --- [sigec] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-10-04T11:05:32.035+01:00  INFO 28364 --- [sigec] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-10-04T11:05:36.966+01:00  INFO 28364 --- [sigec] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-10-04T11:05:37.512+01:00  INFO 28364 --- [sigec] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 526 ms. Found 7 JPA repository interfaces.
+2025-10-04T11:05:37.802+01:00  INFO 28364 --- [sigec] [  restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'errorChannel' has been explicitly defined. Therefore, a default PublishSubscribeChannel will be created.
+2025-10-04T11:05:37.824+01:00  INFO 28364 --- [sigec] [  restartedMain] faultConfiguringBeanFactoryPostProcessor : No bean named 'integrationHeaderChannelRegistry' has been explicitly defined. Therefore, a default DefaultHeaderChannelRegistry will be created.
+2025-10-04T11:05:42.330+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8086 (http)
+2025-10-04T11:05:42.374+01:00  INFO 28364 --- [sigec] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-10-04T11:05:42.375+01:00  INFO 28364 --- [sigec] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.43]
+2025-10-04T11:05:42.593+01:00  INFO 28364 --- [sigec] [  restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-10-04T11:05:42.596+01:00  INFO 28364 --- [sigec] [  restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 10559 ms
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+2025-10-04T11:05:43.318+01:00  INFO 28364 --- [sigec] [  restartedMain] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-10-04T11:05:44.113+01:00  INFO 28364 --- [sigec] [  restartedMain] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.22.Final
+2025-10-04T11:05:44.245+01:00  INFO 28364 --- [sigec] [  restartedMain] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-10-04T11:05:48.348+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-10-04T11:05:48.488+01:00  INFO 28364 --- [sigec] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-10-04T11:05:49.170+01:00  INFO 28364 --- [sigec] [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@3ca12217
+2025-10-04T11:05:49.172+01:00  INFO 28364 --- [sigec] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-10-04T11:05:49.383+01:00  WARN 28364 --- [sigec] [  restartedMain] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-10-04T11:05:50.195+01:00  INFO 28364 --- [sigec] [  restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 17.2
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-10-04T11:05:54.226+01:00  INFO 28364 --- [sigec] [  restartedMain] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-10-04T11:05:55.209+01:00  INFO 28364 --- [sigec] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-10-04T11:05:55.925+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-10-04T11:05:57.284+01:00 DEBUG 28364 --- [sigec] [  restartedMain] o.s.w.f.ServerHttpObservationFilter      : Filter 'webMvcObservationFilter' configured for use
+2025-10-04T11:05:57.288+01:00 DEBUG 28364 --- [sigec] [  restartedMain] c.g.g.security.Jwt.AuthTokenFilter       : Filter 'authenticationJwtTokenFilter' configured for use
+2025-10-04T11:05:59.048+01:00  INFO 28364 --- [sigec] [  restartedMain] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider
+2025-10-04T11:05:59.053+01:00  WARN 28364 --- [sigec] [  restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2025-10-04T11:05:59.654+01:00 DEBUG 28364 --- [sigec] [  restartedMain] o.s.w.s.s.s.WebSocketHandlerMapping      : Patterns [/ws/**] in 'stompWebSocketHandlerMapping'
+2025-10-04T11:06:00.091+01:00  WARN 28364 --- [sigec] [  restartedMain] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-10-04T11:06:00.287+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.AdminApplicationController:
+	
+2025-10-04T11:06:00.289+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.AdminFinalApprovalController:
+	
+2025-10-04T11:06:00.289+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.AdminInitController:
+	
+2025-10-04T11:06:00.289+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.AdministratorController:
+	
+2025-10-04T11:06:00.290+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.AdvancedAnalyticsController:
+	
+2025-10-04T11:06:00.290+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.AgentController:
+	
+2025-10-04T11:06:00.290+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.AgentWorkflowController:
+	
+2025-10-04T11:06:00.291+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.ApplicationController:
+	
+2025-10-04T11:06:00.291+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.ApplicationFixController:
+	
+2025-10-04T11:06:00.291+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.ApplicationReviewController:
+	
+2025-10-04T11:06:00.294+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.AuthTestController:
+	
+2025-10-04T11:06:00.295+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.DashboardController:
+	
+2025-10-04T11:06:00.295+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.DebugApplicationController:
+	
+2025-10-04T11:06:00.295+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.DebugController:
+	
+2025-10-04T11:06:00.296+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.DebugSubmissionController:
+	
+2025-10-04T11:06:00.296+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.DocumentController:
+	
+2025-10-04T11:06:00.296+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.EmailTestController:
+	
+2025-10-04T11:06:00.296+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.ExportController:
+	
+2025-10-04T11:06:00.296+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.HealthController:
+	
+2025-10-04T11:06:00.297+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.InscriptionWorkflowController:
+	
+2025-10-04T11:06:00.297+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.NotificationController:
+	
+2025-10-04T11:06:00.297+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.OAuth2FixController:
+	
+2025-10-04T11:06:00.297+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.OAuth2TestController:
+	
+2025-10-04T11:06:00.297+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.OAuth2UserController:
+	
+2025-10-04T11:06:00.298+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.OAuth2UserCreationController:
+	
+2025-10-04T11:06:00.298+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.RegistrationFormController:
+	
+2025-10-04T11:06:00.298+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.StatisticsController:
+	
+2025-10-04T11:06:00.298+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.TestApplicationController:
+	
+2025-10-04T11:06:00.302+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.UserController:
+	
+2025-10-04T11:06:00.303+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.UserProfileController:
+	
+2025-10-04T11:06:00.303+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.c.UserRoleUpdateController:
+	
+2025-10-04T11:06:00.304+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	c.g.g.s.A.AuthController:
+	
+2025-10-04T11:06:00.310+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	o.s.b.a.w.s.e.BasicErrorController:
+	
+2025-10-04T11:06:00.325+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	o.s.w.a.OpenApiWebMvcResource:
+	
+2025-10-04T11:06:00.325+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	o.s.w.u.SwaggerWelcomeWebMvc:
+	
+2025-10-04T11:06:00.325+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .WebSocketAnnotationMethodMessageHandler : 
+	o.s.w.u.SwaggerConfigResource:
+	
+2025-10-04T11:06:00.695+01:00 DEBUG 28364 --- [sigec] [  restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 108 mappings in 'requestMappingHandlerMapping'
+2025-10-04T11:06:00.857+01:00 DEBUG 28364 --- [sigec] [  restartedMain] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**, /swagger-ui*/*swagger-initializer.js, /swagger-ui*/**] in 'resourceHandlerMapping'
+2025-10-04T11:06:01.189+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.impl.StdSchedulerFactory      : Using default implementation for ThreadExecutor
+2025-10-04T11:06:01.222+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.core.SchedulerSignalerImpl    : Initialized Scheduler Signaller of type: class org.quartz.core.SchedulerSignalerImpl
+2025-10-04T11:06:01.222+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.core.QuartzScheduler          : Quartz Scheduler v2.5.0 created.
+2025-10-04T11:06:01.223+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.simpl.RAMJobStore             : RAMJobStore initialized.
+2025-10-04T11:06:01.225+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.core.QuartzScheduler          : Scheduler meta-data: Quartz Scheduler (v2.5.0) 'quartzScheduler' with instanceId 'NON_CLUSTERED'
+  Scheduler class: 'org.quartz.core.QuartzScheduler' - running locally.
+  NOT STARTED.
+  Currently in standby mode.
+  Number of jobs executed: 0
+  Using thread pool 'org.quartz.simpl.SimpleThreadPool' - with 10 threads.
+  Using job-store 'org.quartz.simpl.RAMJobStore' - which does not support persistence. and is not clustered.
+
+2025-10-04T11:06:01.226+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.impl.StdSchedulerFactory      : Quartz scheduler 'quartzScheduler' initialized from an externally provided properties instance.
+2025-10-04T11:06:01.226+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.impl.StdSchedulerFactory      : Quartz scheduler version: 2.5.0
+2025-10-04T11:06:01.227+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.core.QuartzScheduler          : JobFactory set to: org.springframework.scheduling.quartz.SpringBeanJobFactory@5d0fd9e
+2025-10-04T11:06:01.504+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 15 endpoints beneath base path '/actuator'
+=== WebSecurityConfig: OAuth2ProductionHandler available: true
+=== WebSecurityConfig: Configuring OAuth2 login with production handler
+2025-10-04T11:06:02.207+01:00 DEBUG 28364 --- [sigec] [  restartedMain] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, OAuth2AuthorizationRequestRedirectFilter, OAuth2LoginAuthenticationFilter, AuthTokenFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2025-10-04T11:06:02.685+01:00 DEBUG 28364 --- [sigec] [  restartedMain] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-10-04T11:06:02.795+01:00 DEBUG 28364 --- [sigec] [  restartedMain] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 2 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-10-04T11:06:03.541+01:00  WARN 28364 --- [sigec] [  restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : Unable to start LiveReload server
+2025-10-04T11:06:03.863+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Adding {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-10-04T11:06:03.864+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'sigec.errorChannel' has 1 subscriber(s).
+2025-10-04T11:06:03.865+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.i.endpoint.EventDrivenConsumer       : started bean '_org.springframework.integration.errorLogger'
+2025-10-04T11:06:03.866+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : clientOutboundChannel added SubProtocolWebSocketHandler[StompSubProtocolHandler[v10.stomp, v11.stomp, v12.stomp]]
+2025-10-04T11:06:03.866+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : clientInboundChannel added WebSocketAnnotationMethodMessageHandler[prefixes=[/app/]]
+2025-10-04T11:06:03.867+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2025-10-04T11:06:03.867+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : clientInboundChannel added SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5851b218]
+2025-10-04T11:06:03.867+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : brokerChannel added SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5851b218]
+2025-10-04T11:06:03.867+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5851b218]]
+2025-10-04T11:06:03.870+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2025-10-04T11:06:03.870+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : clientInboundChannel added UserDestinationMessageHandler[DefaultUserDestinationResolver[prefix=/user/]]
+2025-10-04T11:06:03.870+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : brokerChannel added UserDestinationMessageHandler[DefaultUserDestinationResolver[prefix=/user/]]
+2025-10-04T11:06:03.889+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : clientOutboundChannel removed SubProtocolWebSocketHandler[StompSubProtocolHandler[v10.stomp, v11.stomp, v12.stomp]]
+2025-10-04T11:06:03.890+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : clientInboundChannel removed WebSocketAnnotationMethodMessageHandler[prefixes=[/app/]]
+2025-10-04T11:06:03.890+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopping...
+2025-10-04T11:06:03.890+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5851b218]]
+2025-10-04T11:06:03.890+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : clientInboundChannel removed SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5851b218]
+2025-10-04T11:06:03.890+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : brokerChannel removed SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5851b218]
+2025-10-04T11:06:03.890+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopped.
+2025-10-04T11:06:03.890+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : clientInboundChannel removed UserDestinationMessageHandler[DefaultUserDestinationResolver[prefix=/user/]]
+2025-10-04T11:06:03.890+01:00 DEBUG 28364 --- [sigec] [  restartedMain] org.springframework.web.SimpLogging      : brokerChannel removed UserDestinationMessageHandler[DefaultUserDestinationResolver[prefix=/user/]]
+2025-10-04T11:06:03.920+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.i.endpoint.EventDrivenConsumer       : Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel
+2025-10-04T11:06:03.921+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.i.channel.PublishSubscribeChannel    : Channel 'sigec.errorChannel' has 0 subscriber(s).
+2025-10-04T11:06:03.921+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.i.endpoint.EventDrivenConsumer       : stopped bean '_org.springframework.integration.errorLogger'
+2025-10-04T11:06:03.921+01:00  WARN 28364 --- [sigec] [  restartedMain] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2025-10-04T11:06:03.932+01:00  INFO 28364 --- [sigec] [  restartedMain] o.s.s.quartz.SchedulerFactoryBean        : Shutting down Quartz Scheduler
+2025-10-04T11:06:03.932+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.core.QuartzScheduler          : Scheduler quartzScheduler_$_NON_CLUSTERED shutting down.
+2025-10-04T11:06:03.933+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.core.QuartzScheduler          : Scheduler quartzScheduler_$_NON_CLUSTERED paused.
+2025-10-04T11:06:03.933+01:00  INFO 28364 --- [sigec] [  restartedMain] org.quartz.core.QuartzScheduler          : Scheduler quartzScheduler_$_NON_CLUSTERED shutdown complete.
+2025-10-04T11:06:03.941+01:00  INFO 28364 --- [sigec] [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-10-04T11:06:03.947+01:00  INFO 28364 --- [sigec] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-10-04T11:06:03.957+01:00  INFO 28364 --- [sigec] [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2025-10-04T11:06:04.014+01:00  INFO 28364 --- [sigec] [  restartedMain] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-10-04T11:06:04.056+01:00 ERROR 28364 --- [sigec] [  restartedMain] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8086 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8086 or configure this application to listen on another port.
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:37 min
+[INFO] Finished at: 2025-10-04T11:06:04+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.5.4:run (default-cli) on project gestin_inscription: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

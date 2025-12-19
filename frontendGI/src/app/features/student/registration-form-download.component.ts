@@ -86,7 +86,11 @@ export class RegistrationFormDownloadComponent implements OnInit {
   }
 
   checkStatus() {
-    fetch(`/api/registration-forms/status/${this.applicationId}`)
+    fetch(`http://localhost:8086/api/registration-form/status/${this.applicationId}`, {
+      headers: {
+        'Authorization': `Bearer ${this.authService.getToken()}`
+      }
+    })
       .then(response => response.json())
       .then(data => {
         if (data.success) {
@@ -97,13 +101,23 @@ export class RegistrationFormDownloadComponent implements OnInit {
   }
 
   downloadForm() {
-    const token = Date.now().toString();
-    const url = `/api/registration-forms/download/${this.applicationId}?token=${token}`;
+    const url = `http://localhost:8086/api/registration-form/${this.applicationId}/generate`;
     
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `fiche_inscription_${this.applicationId}.pdf`;
-    link.click();
+    fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${this.authService.getToken()}`
+      }
+    })
+    .then(response => response.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `fiche_inscription_${this.applicationId}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(error => console.error('Erreur:', error));
   }
 
   getStatusClass(status: string): string {

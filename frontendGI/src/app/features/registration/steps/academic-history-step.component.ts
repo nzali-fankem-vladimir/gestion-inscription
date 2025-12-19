@@ -156,6 +156,39 @@ import { GeolocationService, Institution } from '../../../core/services/geolocat
                  placeholder="Ex: 15.5">
         </div>
 
+        <!-- Établissement cible -->
+        <div>
+          <label for="targetInstitution" class="block text-sm font-medium text-gray-700 mb-2">
+            Établissement cible pour votre candidature <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <input type="text" 
+                   id="targetInstitution"
+                   formControlName="targetInstitution"
+                   (input)="onTargetInstitutionInput($event)"
+                   (focus)="showTargetInstitutionSuggestions = true"
+                   (blur)="hideTargetInstitutionSuggestions()"
+                   class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                   placeholder="Nom de l'établissement où vous souhaitez postuler"
+                   [class.border-red-300]="academicForm.get('targetInstitution')?.invalid && academicForm.get('targetInstitution')?.touched">
+            
+            <!-- Suggestions d'établissements cibles -->
+            <div *ngIf="showTargetInstitutionSuggestions && targetInstitutionSuggestions.length > 0" 
+                 class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+              <div *ngFor="let institution of targetInstitutionSuggestions" 
+                   (mousedown)="selectTargetInstitution(institution)"
+                   class="px-3 py-2 cursor-pointer hover:bg-gray-100">
+                <div class="font-medium text-gray-900">{{institution.name}}</div>
+                <div class="text-sm text-gray-500">{{institution.city}}, {{institution.country}}</div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="academicForm.get('targetInstitution')?.invalid && academicForm.get('targetInstitution')?.touched" 
+               class="mt-1 text-sm text-red-600">
+            L'établissement cible est requis.
+          </div>
+        </div>
+
         <!-- Mentions/Distinctions -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -231,6 +264,8 @@ export class AcademicHistoryStepComponent implements OnInit, OnDestroy {
 
   institutionSuggestions: Institution[] = [];
   showInstitutionSuggestions = false;
+  targetInstitutionSuggestions: Institution[] = [];
+  showTargetInstitutionSuggestions = false;
 
   constructor(
     private fb: FormBuilder,
@@ -259,6 +294,7 @@ export class AcademicHistoryStepComponent implements OnInit, OnDestroy {
       educationLevel: ['', Validators.required],
       specialization: ['', Validators.required],
       subSpecialization: [''],
+      targetInstitution: ['', Validators.required],
       startDate: ['', Validators.required],
       endDate: ['', [Validators.required, this.dateRangeValidator.bind(this)]],
       gpa: [null, [Validators.min(0), Validators.max(20)]],
@@ -359,6 +395,38 @@ export class AcademicHistoryStepComponent implements OnInit, OnDestroy {
   hideInstitutionSuggestions(): void {
     setTimeout(() => {
       this.showInstitutionSuggestions = false;
+    }, 200);
+  }
+
+  onTargetInstitutionInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const query = input.value;
+    
+    if (query.length >= 2) {
+      this.geolocationService.searchInstitutions(query)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(institutions => {
+          this.targetInstitutionSuggestions = institutions;
+          this.showTargetInstitutionSuggestions = true;
+        });
+    } else {
+      this.targetInstitutionSuggestions = [];
+      this.showTargetInstitutionSuggestions = false;
+    }
+  }
+
+  selectTargetInstitution(institution: Institution): void {
+    this.academicForm.patchValue({
+      targetInstitution: institution.name
+    });
+    
+    this.targetInstitutionSuggestions = [];
+    this.showTargetInstitutionSuggestions = false;
+  }
+
+  hideTargetInstitutionSuggestions(): void {
+    setTimeout(() => {
+      this.showTargetInstitutionSuggestions = false;
     }, 200);
   }
 }

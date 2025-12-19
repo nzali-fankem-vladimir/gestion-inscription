@@ -360,13 +360,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private loadDashboardData(): void {
-    // Charger les statistiques
-    this.http.get<any>(`${environment.apiUrl}/dashboard/statistics`)
+    // Utiliser le nouveau endpoint simple pour éviter StackOverflow
+    this.http.get<any>(`${environment.apiUrl}/simple-admin/stats`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           if (data.success) {
-            this.stats = data.statistics;
+            this.stats = {
+              totalApplications: data.stats.totalApplications || 0,
+              totalUsers: data.stats.totalUsers || 0,
+              approvedApplications: 0,
+              pendingApplications: 0,
+              rejectedApplications: 0,
+              reviewApplications: 0
+            };
             this.updateStatusData();
           }
         },
@@ -383,24 +390,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }
       });
 
-    // Charger les candidatures récentes
-    this.http.get<any>(`${environment.apiUrl}/dashboard/recent-applications?limit=10`)
+    // Charger les candidatures avec le nouveau endpoint simple
+    this.http.get<any>(`${environment.apiUrl}/simple-admin/applications`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
-          if (data.success) {
-            this.recentApplications = data.applications.map((app: any) => ({
-              id: app.id,
-              candidateName: app.candidatName,
-              email: app.email,
-              status: app.status,
-              submissionDate: app.submissionDate
+          if (data.success && data.applications) {
+            this.recentApplications = data.applications.slice(0, 10).map((app: any[]) => ({
+              id: app[0], // id
+              candidateName: `${app[4] || ''} ${app[5] || ''}`.trim() || 'N/A', // firstName + lastName
+              email: app[6] || 'N/A', // email
+              status: app[1] || 'UNKNOWN', // status
+              submissionDate: app[2] || new Date().toISOString() // submissionDate
             }));
           }
         },
         error: (error) => {
           console.error('Erreur chargement candidatures:', error);
           this.recentApplications = [];
+        }
+      });
+
+    // Charger les données heatmap
+    this.statisticsService.getHeatmapData()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.heatmapData = data;
+        },
+        error: (error) => {
+          console.error('Erreur chargement heatmap:', error);
+          this.heatmapData = [];
         }
       });
   }
@@ -480,18 +500,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   
   private loadActualCandidateData(): void {
-    // Charger les statistiques spécifiques au candidat
-    this.http.get<any>(`${environment.apiUrl}/dashboard/candidate/statistics`)
+    // Charger les candidatures du candidat connecté
+    this.http.get<any>(`${environment.apiUrl}/applications/my-applications`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
-          if (data.success) {
-            const stats = data.statistics;
+          if (data.success && data.applications) {
+            const apps = data.applications;
             this.candidateStats = {
-              totalApplications: stats.totalApplications || 0,
-              approved: stats.approvedApplications || 0,
-              pending: (stats.pendingApplications || 0) + (stats.reviewApplications || 0),
-              rejected: stats.rejectedApplications || 0
+              totalApplications: apps.length,
+              approved: apps.filter((app: any) => app.status === 'APPROVED').length,
+              pending: apps.filter((app: any) => ['PENDING', 'UNDER_REVIEW'].includes(app.status)).length,
+              rejected: apps.filter((app: any) => app.status === 'REJECTED').length
             };
           }
         },

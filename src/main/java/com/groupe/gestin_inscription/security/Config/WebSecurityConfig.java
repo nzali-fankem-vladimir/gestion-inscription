@@ -127,9 +127,16 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/admin-init/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers("/api/applications/test").permitAll()
+                        .requestMatchers("/api/applications/test-all").permitAll()
+                        .requestMatchers("/api/applications/test-convert/**").permitAll()
+                        .requestMatchers("/api/applications/all").permitAll()
+                        .requestMatchers("/api/applications/all-simple").permitAll()
                         .requestMatchers("/api/applications/test-my-applications").permitAll()
                         .requestMatchers("/api/applications/debug-my-applications").permitAll()
                         .requestMatchers("/api/applications/my-applications").permitAll()
+                        .requestMatchers("/api/applications/create-test-data").permitAll()
+                        .requestMatchers("/api/applications/create-test-documents").permitAll()
+                        .requestMatchers("/api/applications/my-applications-simple").permitAll()
 
                         // Endpoints pour les SUPER_ADMIN
                         .requestMatchers("/api/admin/**").hasRole("SUPER_ADMIN")

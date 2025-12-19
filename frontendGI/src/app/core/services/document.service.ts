@@ -37,6 +37,16 @@ export class DocumentService {
     });
   }
 
+  previewDocument(id: number): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/documents/${id}/preview`, {
+      responseType: 'blob'
+    });
+  }
+
+  getDocumentPreviewUrl(id: number): string {
+    return `${environment.apiUrl}/documents/${id}/preview`;
+  }
+
   validateDocument(documentId: number): Observable<void> {
     return this.http.post<void>(`${environment.apiUrl}/documents/validate/${documentId}`, {});
   }

@@ -33,6 +33,7 @@ export interface AcademicHistory {
   lastInstitution: string;
   specialization: string;
   subSpecialization?: string;
+  targetInstitution: string;
   startDate: string;
   endDate: string;
   educationLevel: string;
@@ -98,6 +99,7 @@ export class RegistrationFormService {
       lastInstitution: '',
       specialization: '',
       subSpecialization: '',
+      targetInstitution: '',
       startDate: '',
       endDate: '',
       educationLevel: '',
@@ -415,6 +417,7 @@ export class RegistrationFormService {
         lastInstitution: '',
         specialization: '',
         subSpecialization: '',
+        targetInstitution: '',
         startDate: '',
         endDate: '',
         educationLevel: '',

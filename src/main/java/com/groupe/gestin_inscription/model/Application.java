@@ -1,5 +1,7 @@
 package com.groupe.gestin_inscription.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.groupe.gestin_inscription.model.Enums.ApplicationStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,7 +14,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name = "candidat")
+@Table(name = "application")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,7 +24,7 @@ public class Application {
     private Long id;
 
     private LocalDateTime submissionDate;
-    private double completionRate;
+    private Double completionRate;
     private LocalDateTime lastUpdated;
 
     @Enumerated(EnumType.STRING)
@@ -36,11 +38,13 @@ public class Application {
     @JoinColumn(name = "assigned_admin_id")
     private Administrator assignedAdmin;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"applications", "academicHistory"})
     private User applicantName;
 
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private Set<Document> documents;
 
     @CreationTimestamp

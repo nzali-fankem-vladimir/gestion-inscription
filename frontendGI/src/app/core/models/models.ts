@@ -42,6 +42,20 @@ export interface Candidat {
   pieceIdentite?: string;
   numeroIdentite?: string;
   dateCreation?: string;
+  // Nouveaux champs ajoutés
+  genre?: string;
+  nationalite?: string;
+  contactUrgence?: string;
+  numeroId?: string;
+  // Informations académiques
+  dernierEtablissement?: string;
+  specialisation?: string;
+  sousSpecialisation?: string;
+  niveauEducation?: string;
+  moyenne?: number;
+  mentions?: string;
+  dateDebut?: string;
+  dateFin?: string;
 }
 
 export interface Agent {
@@ -71,6 +85,11 @@ export interface Dossier {
   dateCreation?: string;
   dateModification?: string;
   documents?: Document[];
+  // Nouveaux champs de candidature
+  institutionCible?: string;
+  specialisationDemandee?: string;
+  tauxCompletion?: number;
+  derniereMiseAJour?: string;
 }
 
 export interface Document {
@@ -78,9 +97,11 @@ export interface Document {
   dossierId: number;
   nom: string;
   type: DocumentType;
-  cheminFichier: string;
+  cheminFichier?: string;
   tailleFichier?: number;
+  taille?: number; // Alias pour tailleFichier
   status?: DocumentStatus;
+  statut?: string; // Alias pour status
   dateUpload?: string;
 }
 

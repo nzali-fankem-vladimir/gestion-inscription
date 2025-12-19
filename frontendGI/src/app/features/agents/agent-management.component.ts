@@ -12,10 +12,39 @@ import { Agent } from '../../core/models/models';
     <div class="space-y-6">
       <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold text-gray-900">Gestion des Agents</h2>
-
+        <button (click)="showCreateForm = true" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+          Créer un Agent
+        </button>
       </div>
 
-
+      <!-- Formulaire de création -->
+      <div *ngIf="showCreateForm" class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-medium mb-4">Créer un Nouvel Agent</h3>
+        <form (ngSubmit)="createAgent()" #createForm="ngForm" class="grid grid-cols-2 gap-4" novalidate>
+          <input type="text" [(ngModel)]="newAgent.nom" name="nom" placeholder="Nom" required
+                 class="px-3 py-2 border border-gray-300 rounded-md">
+          <input type="text" [(ngModel)]="newAgent.prenom" name="prenom" placeholder="Prénom" required
+                 class="px-3 py-2 border border-gray-300 rounded-md">
+          <input type="email" [(ngModel)]="newAgent.email" name="email" placeholder="Email" required
+                 class="px-3 py-2 border border-gray-300 rounded-md">
+          <input type="tel" [(ngModel)]="newAgent.telephone" name="telephone" placeholder="Téléphone"
+                 class="px-3 py-2 border border-gray-300 rounded-md">
+          <input type="text" [(ngModel)]="newAgent.fonction" name="fonction" placeholder="Fonction"
+                 class="px-3 py-2 border border-gray-300 rounded-md">
+          <input type="password" [(ngModel)]="newAgent.password" name="password" placeholder="Mot de passe" required
+                 class="px-3 py-2 border border-gray-300 rounded-md">
+          <div class="flex space-x-2">
+            <button type="submit"
+                    class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+              Créer
+            </button>
+            <button type="button" (click)="cancelCreate()"
+                    class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
 
       <div *ngIf="showEditForm" class="bg-white p-6 rounded-lg shadow">
         <h3 class="text-lg font-medium mb-4">Modifier l'Agent</h3>
@@ -76,7 +105,9 @@ import { Agent } from '../../core/models/models';
 export class AgentManagementComponent implements OnInit {
   agents: Agent[] = [];
   showEditForm = false;
+  showCreateForm = false;
   editingAgent: Agent = { nom: '', prenom: '', email: '', password: '' };
+  newAgent: Agent = { nom: '', prenom: '', email: '', password: '' };
 
   constructor(private agentService: AgentService) {}
 
@@ -144,5 +175,30 @@ export class AgentManagementComponent implements OnInit {
         error: (error) => console.error('Erreur:', error)
       });
     }
+  }
+
+  createAgent() {
+    if (!this.newAgent.nom || !this.newAgent.prenom || !this.newAgent.email || !this.newAgent.password) {
+      alert('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    this.agentService.createAgent(this.newAgent).subscribe({
+      next: (agent) => {
+        console.log('Agent créé:', agent);
+        this.loadAgents();
+        this.cancelCreate();
+        alert('Agent créé avec succès!');
+      },
+      error: (error) => {
+        console.error('Erreur création agent:', error);
+        alert('Erreur lors de la création de l\'agent');
+      }
+    });
+  }
+
+  cancelCreate() {
+    this.showCreateForm = false;
+    this.newAgent = { nom: '', prenom: '', email: '', password: '' };
   }
 }

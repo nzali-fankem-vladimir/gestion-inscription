@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { DomSanitizer } from '@angular/platform-browser';
 import { DossierService } from '../../core/services/dossier.service';
 import { DocumentService } from '../../core/services/document.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -185,12 +186,44 @@ import { Dossier, Document, DossierStatus, DocumentType, Role } from '../../core
               
               <!-- Informations candidat -->
               <div class="mb-6">
-                <h4 class="text-lg font-medium mb-3">Informations du candidat</h4>
+                <h4 class="text-lg font-medium mb-3">Informations personnelles</h4>
                 <div class="grid grid-cols-2 gap-4 text-sm">
                   <div><strong>Nom:</strong> {{selectedDossier.candidat?.nom}}</div>
                   <div><strong>Prénom:</strong> {{selectedDossier.candidat?.prenom}}</div>
                   <div><strong>Email:</strong> {{selectedDossier.candidat?.email}}</div>
                   <div><strong>Téléphone:</strong> {{selectedDossier.candidat?.telephone}}</div>
+                  <div><strong>Adresse:</strong> {{selectedDossier.candidat?.adresse}}</div>
+                  <div><strong>Genre:</strong> {{selectedDossier.candidat?.genre}}</div>
+                  <div><strong>Date de naissance:</strong> {{selectedDossier.candidat?.dateNaissance}}</div>
+                  <div><strong>Nationalité:</strong> {{selectedDossier.candidat?.nationalite}}</div>
+                  <div><strong>Contact d'urgence:</strong> {{selectedDossier.candidat?.contactUrgence}}</div>
+                  <div><strong>Numéro ID:</strong> {{selectedDossier.candidat?.numeroId}}</div>
+                </div>
+              </div>
+              
+              <!-- Informations académiques -->
+              <div class="mb-6">
+                <h4 class="text-lg font-medium mb-3">Parcours académique</h4>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div><strong>Dernier établissement:</strong> {{selectedDossier.candidat?.dernierEtablissement}}</div>
+                  <div><strong>Spécialisation:</strong> {{selectedDossier.candidat?.specialisation}}</div>
+                  <div><strong>Sous-spécialisation:</strong> {{selectedDossier.candidat?.sousSpecialisation}}</div>
+                  <div><strong>Niveau d'éducation:</strong> {{selectedDossier.candidat?.niveauEducation}}</div>
+                  <div><strong>Moyenne générale:</strong> {{selectedDossier.candidat?.moyenne}}</div>
+                  <div><strong>Mentions:</strong> {{selectedDossier.candidat?.mentions}}</div>
+                  <div><strong>Date de début:</strong> {{selectedDossier.candidat?.dateDebut}}</div>
+                  <div><strong>Date de fin:</strong> {{selectedDossier.candidat?.dateFin}}</div>
+                </div>
+              </div>
+              
+              <!-- Informations candidature -->
+              <div class="mb-6">
+                <h4 class="text-lg font-medium mb-3">Détails de la candidature</h4>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div><strong>Institution cible:</strong> {{selectedDossier.institutionCible}}</div>
+                  <div><strong>Spécialisation demandée:</strong> {{selectedDossier.specialisationDemandee}}</div>
+                  <div><strong>Taux de complétion:</strong> {{selectedDossier.tauxCompletion}}%</div>
+                  <div><strong>Dernière mise à jour:</strong> {{selectedDossier.derniereMiseAJour | date:'short'}}</div>
                 </div>
               </div>
               
@@ -198,17 +231,25 @@ import { Dossier, Document, DossierStatus, DocumentType, Role } from '../../core
               <div class="mb-6">
                 <h4 class="text-lg font-medium mb-3">Documents ({{selectedDossierDocuments.length}})</h4>
                 <div class="space-y-2">
-                  <div *ngFor="let doc of selectedDossierDocuments" 
+                  <div *ngFor="let doc of selectedDossier.documents" 
                        class="flex items-center justify-between p-3 border rounded">
-                    <div>
+                    <div class="flex-1">
                       <div class="font-medium">{{doc.nom}}</div>
-                      <div class="text-sm text-gray-500">{{doc.type}} - {{doc.dateUpload | date:'short'}}</div>
+                      <div class="text-sm text-gray-500">
+                        {{doc.type}} - {{doc.taille}} MB - 
+                        <span [class]="getDocumentStatusClass(doc.statut || 'PENDING')">{{doc.statut || 'PENDING'}}</span>
+                      </div>
+                      <div class="text-xs text-gray-400">Uploadé le: {{doc.dateUpload | date:'short'}}</div>
                     </div>
                     <div class="flex space-x-2">
+                      <button class="btn-secondary text-sm" (click)="previewDocument(doc.id!)">Prévisualiser</button>
                       <button class="btn-secondary text-sm" (click)="download(doc.id!)">Télécharger</button>
                       <button *ngIf="isAgent() || isAdmin()" class="btn-primary text-sm">Valider</button>
                       <button *ngIf="isAgent() || isAdmin()" class="px-3 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 text-sm">Rejeter</button>
                     </div>
+                  </div>
+                  <div *ngIf="!selectedDossier.documents || selectedDossier.documents.length === 0" class="text-center py-4 text-gray-500">
+                    Aucun document trouvé
                   </div>
                 </div>
               </div>
@@ -282,6 +323,33 @@ import { Dossier, Document, DossierStatus, DocumentType, Role } from '../../core
           </div>
         </div>
       </div>
+
+      <!-- Modal de prévisualisation -->
+      <div *ngIf="showPreviewModal" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+          <div class="fixed inset-0 bg-black opacity-75" (click)="closePreviewModal()"></div>
+          <div class="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto relative z-10 shadow-xl">
+            <div class="p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Prévisualisation du document</h3>
+                <button (click)="closePreviewModal()" class="text-gray-400 hover:text-gray-600">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+              
+              <div class="text-center">
+                <iframe *ngIf="previewUrl" [src]="previewUrl" class="w-full h-96 border rounded"></iframe>
+                <img *ngIf="previewImageUrl" [src]="previewImageUrl" class="max-w-full h-auto mx-auto rounded" alt="Prévisualisation">
+                <div *ngIf="!previewUrl && !previewImageUrl" class="py-8 text-gray-500">
+                  Impossible de prévisualiser ce type de fichier
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `
 })
@@ -313,6 +381,11 @@ export class DossierManagementComponent implements OnInit {
   nonCompliantDocument = '';
   customMessage = '';
   
+  // Prévisualisation modal
+  showPreviewModal = false;
+  previewUrl: any = null;
+  previewImageUrl: string | null = null;
+  
   Math = Math;
 
   constructor(
@@ -321,7 +394,8 @@ export class DossierManagementComponent implements OnInit {
     private authService: AuthService,
     private applicationReviewService: ApplicationReviewService,
     private notificationService: NotificationService,
-    private router: Router
+    private router: Router,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit() {
@@ -340,6 +414,56 @@ export class DossierManagementComponent implements OnInit {
       },
       error: (err) => console.error('Erreur téléchargement document:', err)
     });
+  }
+
+  previewDocument(documentId: number) {
+    this.documentService.previewDocument(documentId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const fileType = blob.type;
+        
+        console.log('Preview document - File type:', fileType);
+        
+        if (fileType.startsWith('image/')) {
+          this.previewImageUrl = url;
+          this.previewUrl = null;
+        } else if (fileType === 'application/pdf' || fileType.includes('pdf')) {
+          this.previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+          this.previewImageUrl = null;
+        } else if (fileType.startsWith('text/') || 
+                   fileType.includes('document') || 
+                   fileType.includes('word') || 
+                   fileType.includes('excel') ||
+                   fileType.includes('spreadsheet')) {
+          // Pour les documents Office et texte, essayer de les afficher dans iframe
+          this.previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+          this.previewImageUrl = null;
+        } else {
+          // Type de fichier non supporté pour la prévisualisation
+          this.previewUrl = null;
+          this.previewImageUrl = null;
+          console.warn('Type de fichier non supporté pour la prévisualisation:', fileType);
+        }
+        
+        this.showPreviewModal = true;
+      },
+      error: (err) => {
+        console.error('Erreur prévisualisation document:', err);
+        alert('Impossible de prévisualiser ce document');
+      }
+    });
+  }
+
+  closePreviewModal() {
+    this.showPreviewModal = false;
+    if (this.previewUrl) {
+      window.URL.revokeObjectURL(this.previewUrl);
+    }
+    if (this.previewImageUrl) {
+      window.URL.revokeObjectURL(this.previewImageUrl);
+    }
+    this.previewUrl = null;
+    this.previewImageUrl = null;
   }
 
   loadDossiers() {
@@ -407,10 +531,12 @@ export class DossierManagementComponent implements OnInit {
   viewDossier(dossier: Dossier) {
     this.selectedDossier = dossier;
     this.newStatus = dossier.status;
-    this.loadDossierDocuments(dossier.id!);
+    // Les documents sont déjà inclus dans le dossier depuis le backend
+    console.log('Documents du dossier sélectionné:', dossier.documents);
   }
 
   loadDossierDocuments(dossierId: number) {
+    // Méthode conservée pour compatibilité mais plus nécessaire
     this.documentService.getDocumentsByDossierId(dossierId).subscribe({
       next: (documents) => this.selectedDossierDocuments = documents,
       error: (error) => console.error('Erreur chargement documents:', error)
@@ -428,11 +554,17 @@ export class DossierManagementComponent implements OnInit {
 
   updateDossierStatus() {
     if (this.selectedDossier) {
-      // Note: Il faudrait une API pour mettre à jour le statut
-      this.selectedDossier.status = this.newStatus;
-      alert('Statut mis à jour avec succès!');
-      this.closeModal();
-      this.loadDossiers();
+      this.dossierService.updateDossierStatus(this.selectedDossier.id!, this.newStatus).subscribe({
+        next: (response) => {
+          alert('Statut mis à jour avec succès!');
+          this.closeModal();
+          this.loadDossiers();
+        },
+        error: (error) => {
+          console.error('Erreur mise à jour statut:', error);
+          alert('Erreur lors de la mise à jour du statut');
+        }
+      });
     }
   }
 
@@ -491,6 +623,19 @@ export class DossierManagementComponent implements OnInit {
         return 'Rejeté';
       default:
         return status;
+    }
+  }
+
+  getDocumentStatusClass(status: string): string {
+    switch (status) {
+      case 'PENDING':
+        return 'text-yellow-600 font-medium';
+      case 'APPROVED':
+        return 'text-green-600 font-medium';
+      case 'REJECTED':
+        return 'text-red-600 font-medium';
+      default:
+        return 'text-gray-600';
     }
   }
 

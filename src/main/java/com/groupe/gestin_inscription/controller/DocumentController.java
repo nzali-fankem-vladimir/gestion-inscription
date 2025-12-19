@@ -135,31 +135,7 @@ public class DocumentController {
         return ResponseEntity.ok(documents.stream().map(this::convertToDto).toList());
     }
 
-    @Operation(summary = "Preview a document")
-    @GetMapping("/{documentId}/preview")
-    public ResponseEntity<String> previewDocument(@PathVariable Long documentId) {
-        String htmlContent = "<!DOCTYPE html>" +
-            "<html><head><title>Aper\u00e7u Document #" + documentId + "</title></head>" +
-            "<body style='font-family: Arial, sans-serif; padding: 20px;'>" +
-            "<h2>Aper\u00e7u du Document #" + documentId + "</h2>" +
-            "<div style='border: 1px solid #ccc; padding: 20px; margin: 20px 0; background: #f9f9f9;'>" +
-            "<p><strong>Type:</strong> Document PDF</p>" +
-            "<p><strong>Statut:</strong> En attente de validation</p>" +
-            "<p><strong>Taille:</strong> 1.2 MB</p>" +
-            "<p><strong>Date d'upload:</strong> " + java.time.LocalDateTime.now().toString() + "</p>" +
-            "</div>" +
-            "<div style='text-align: center; margin: 20px;'>" +
-            "<p style='color: #666;'>Contenu du document sera affich\u00e9 ici</p>" +
-            "<div style='width: 100%; height: 400px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center;'>" +
-            "<span style='color: #999;'>Aper\u00e7u du document #" + documentId + "</span>" +
-            "</div>" +
-            "</div>" +
-            "</body></html>";
-        
-        return ResponseEntity.ok()
-            .header("Content-Type", "text/html; charset=utf-8")
-            .body(htmlContent);
-    }
+
     
     @Operation(summary = "Get document content for preview")
     @GetMapping("/{documentId}/content")
@@ -172,24 +148,7 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
     
-    @Operation(summary = "Download a document")
-    @GetMapping("/{documentId}/download")
-    @PreAuthorize("hasAnyRole('AGENT', 'SUPER_ADMIN', 'CANDIDATE')")
-    public ResponseEntity<?> downloadDocument(@PathVariable Long documentId) {
-        try {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Document download initiated");
-            response.put("documentId", documentId);
-            response.put("note", "File download functionality not yet implemented");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error downloading document: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
-        }
-    }
+
 
     @Operation(summary = "Delete a document")
     @DeleteMapping("/{documentId}")
